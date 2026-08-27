@@ -1,0 +1,86 @@
+@import "tailwindcss";
+
+/* ---------------------------------------------------------------------------
+   Postner design tokens.
+   Palette is the brand system in `web/scaffold.md` §1.3 — extracted from the
+   logo artwork. Light canvas, near-black "ink", one accent green.
+   Do not hard-code hex values in components; use these tokens.
+--------------------------------------------------------------------------- */
+@theme {
+  --color-bg: #f3f3f3;
+  --color-surface: #ffffff;
+  --color-border: #e2e2e0;
+
+  --color-ink: #0c1b20;
+  --color-ink-muted: #5b6b70;
+  --color-ink-subtle: #8b989c;
+
+  /* Accent is light — pair with accent-ink (dark) for AA contrast, never white. */
+  --color-accent: #9fc131;
+  --color-accent-ink: #0c1b20;
+  --color-accent-soft: #eef5d8;
+
+  /* Review chrome: the post card inverts against the light canvas. */
+  --color-card: #16262c;
+  --color-card-elevated: #1e3138;
+  --color-card-ink: #f5f7f7;
+  --color-card-muted: #93a5ab;
+  --color-card-border: #2a3f47;
+
+  /* Action colors for the three review FABs (see review-screen-reference.png). */
+  --color-reject: #ef4444;
+  --color-edit: #3b82f6;
+  --color-approve: #10b981;
+
+  --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-geist-mono), ui-monospace, monospace;
+
+  --radius-card: 20px;
+
+  --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@layer base {
+  * {
+    border-color: var(--color-border);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-bg);
+    color: var(--color-ink);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  /* Restrained motion, per scaffold.md §5.4 / §5.7. */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--color-ink);
+    outline-offset: 2px;
+    border-radius: 4px;
+  }
+}
+
+@layer utilities {
+  .scrollbar-none {
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+}
