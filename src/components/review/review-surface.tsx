@@ -7,7 +7,7 @@ import { FabRow } from "@/components/post/fab-row";
 import { RejectSheet } from "@/components/review/reject-sheet";
 import { EditSheet } from "@/components/review/edit-sheet";
 import { DownloadSheet } from "@/components/review/download-sheet";
-import { ErrorNote } from "@/components/ui/feedback";
+import { ErrorNote, Spinner } from "@/components/ui/feedback";
 import { useFeedback } from "@/features/posts/hooks";
 import { useBrands } from "@/features/brands/hooks";
 import { toMessage } from "@/lib/api/errors";
@@ -38,6 +38,11 @@ export function ReviewSurface({
 
   const brand = brands.data?.find((item) => item.id === post.brand_id);
 
+  /**
+   * Approving is the expensive step now: the API renders every page with
+   * Playwright and uploads the PNGs before it answers, so this request runs for
+   * seconds rather than milliseconds. Say so instead of leaving a dead button.
+   */
   function approve() {
     feedback.mutate(
       { decision: "approved" },
@@ -72,6 +77,16 @@ export function ReviewSurface({
         onApprove={approve}
         disabled={feedback.isPending}
       />
+
+      {feedback.isPending ? (
+        <p
+          className="flex items-center gap-2 text-sm text-ink-muted"
+          aria-live="polite"
+        >
+          <Spinner />
+          Rendering your files…
+        </p>
+      ) : null}
 
       {footer}
 

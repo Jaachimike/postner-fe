@@ -57,7 +57,7 @@ export function Button({
       {...props}
     >
       {loading ? <Loader2 className="size-4 animate-spin" aria-hidden /> : null}
-      {children}
+      {asChild ? <Slot.Slottable>{children}</Slot.Slottable> : children}
     </Comp>
   );
 }

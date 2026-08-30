@@ -1,20 +1,21 @@
 "use client";
 
 import * as React from "react";
-import Image from "next/image";
 import {
   BadgeCheck,
   BarChart2,
   Heart,
-  ImageOff,
   MessageCircle,
   Repeat2,
   Info,
 } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
+import { HtmlPreview, PreviewNote } from "@/components/ui/html-preview";
 import {
   composedPages,
-  pageImageUrl,
+  needsRecompose,
+  pageDimensions,
+  pagePreviewHtml,
   postHandle,
   type Post,
 } from "@/lib/api/types";
@@ -40,7 +41,9 @@ export function PostCard({
   const pages = composedPages(post);
   const [page, setPage] = React.useState(0);
   const current = pages[Math.min(page, Math.max(pages.length - 1, 0))];
-  const imageUrl = current ? pageImageUrl(current) : null;
+  const html = current ? pagePreviewHtml(current) : null;
+  const size = current ? pageDimensions(current, post.format) : null;
+  const stale = needsRecompose(post);
 
   const displayName = brand?.name ?? post.content?.brand ?? "Your brand";
   const body =
@@ -82,23 +85,35 @@ export function PostCard({
 
       {pages.length > 0 ? (
         <figure className="flex flex-col gap-2">
-          <div
-            className="relative w-full overflow-hidden rounded-xl bg-card-elevated"
-            style={{ aspectRatio: aspectRatio(post.format) }}
-          >
-            {imageUrl ? (
-              <Image
-                src={imageUrl}
-                alt={`${formatLabel(post.format)} preview, page ${page + 1}`}
-                fill
-                unoptimized
-                sizes="(max-width: 640px) 100vw, 520px"
-                className="object-cover"
+          {stale ? (
+            <div
+              className="relative w-full overflow-hidden rounded-xl bg-card-elevated"
+              style={{ aspectRatio: aspectRatio(post.format) }}
+            >
+              <PreviewNote
+                title="Photos need rebuilding"
+                body="This post was made before images moved to storage, so its photos cannot load. Edit it, or generate new photos, to rebuild the design."
               />
-            ) : (
-              <UnavailablePreview />
-            )}
-          </div>
+            </div>
+          ) : html && size ? (
+            <HtmlPreview
+              html={html}
+              width={size.width}
+              height={size.height}
+              title={`${formatLabel(post.format)} preview, page ${page + 1}`}
+              className="rounded-xl bg-card-elevated"
+            />
+          ) : (
+            <div
+              className="relative w-full overflow-hidden rounded-xl bg-card-elevated"
+              style={{ aspectRatio: aspectRatio(post.format) }}
+            >
+              <PreviewNote
+                title="Preview not ready"
+                body="The design has not been built for this page yet. Re-run the edit, or compose the post again."
+              />
+            </div>
+          )}
 
           {pages.length > 1 ? (
             <div className="flex items-center justify-center gap-1.5 pt-0.5">
@@ -141,24 +156,5 @@ export function PostCard({
         ) : null}
       </footer>
     </article>
-  );
-}
-
-/**
- * Composed pages only carry a browser-usable URL when the API runs with
- * STORAGE_BACKEND=s3. On the default `local` backend the API hands back a
- * container filesystem path and serves no route for it, so say so plainly
- * rather than rendering a broken image.
- */
-function UnavailablePreview() {
-  return (
-    <div className="flex size-full flex-col items-center justify-center gap-2 px-6 text-center">
-      <ImageOff className="size-6 text-card-muted" aria-hidden />
-      <p className="text-sm font-medium text-card-ink">Preview not available</p>
-      <p className="max-w-xs text-xs leading-relaxed text-card-muted">
-        The design rendered, but the API is running with local storage and does
-        not serve the file over HTTP. Set STORAGE_BACKEND=s3 to see it here.
-      </p>
-    </div>
   );
 }

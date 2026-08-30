@@ -85,11 +85,32 @@ export function useGenerateImages(postId: string) {
   });
 }
 
+/** Fills the template HTML for review. Does not rasterise anything. */
 export function useCompose(postId: string) {
   return usePostMutation<S["ComposeRequest"]>(postId, async (body) => {
     const result = await api.POST("/posts/{post_id}/compose", {
       params: { path: { post_id: postId } },
       body,
+    });
+    return unwrap<Post>(result);
+  });
+}
+
+/**
+ * Runs Playwright and uploads the PNGs.
+ *
+ * Approving a post already triggers this server-side, so this is for the paths
+ * that need files without a fresh approval — re-rendering after a resize, or
+ * retrying a render that failed.
+ */
+export function useRender(postId: string) {
+  return usePostMutation<{ pages?: string[] | null }>(postId, async (body) => {
+    const result = await api.POST("/posts/{post_id}/render", {
+      params: { path: { post_id: postId } },
+      // The endpoint shares ComposeRequest, so `ensure_images` is part of the
+      // shape — but render only reads `pages`; the images are long settled by
+      // the time anything is rasterised.
+      body: { ensure_images: true, ...body },
     });
     return unwrap<Post>(result);
   });

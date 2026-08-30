@@ -29,7 +29,7 @@ export default function PostPage() {
     return <ErrorNote message={toMessage(post.error)} />;
   }
 
-  if (!pipeline.isComposed) {
+  if (!pipeline.isReady) {
     return (
       <Generating
         steps={pipeline.steps}

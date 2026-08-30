@@ -231,6 +231,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/posts/{post_id}/pages/{page_id}/html": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Page Preview Html
+         * @description Browser-ready filled HTML for iframe / srcdoc (images inlined as data URIs).
+         */
+        get: operations["get_page_preview_html_posts__post_id__pages__page_id__html_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/posts/{post_id}/images": {
         parameters: {
             query?: never;
@@ -259,6 +279,26 @@ export interface paths {
         put?: never;
         /** Post Compose */
         post: operations["post_compose_posts__post_id__compose_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts/{post_id}/render": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Render
+         * @description Generate download PNGs from filled HTML (Playwright + storage upload).
+         */
+        post: operations["post_render_posts__post_id__render_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1314,6 +1354,38 @@ export interface operations {
             };
         };
     };
+    get_page_preview_html_posts__post_id__pages__page_id__html_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+                page_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/html": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     post_images_posts__post_id__images_post: {
         parameters: {
             query?: never;
@@ -1350,6 +1422,41 @@ export interface operations {
         };
     };
     post_compose_posts__post_id__compose_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ComposeRequest"] | null;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    post_render_posts__post_id__render_post: {
         parameters: {
             query?: never;
             header?: never;

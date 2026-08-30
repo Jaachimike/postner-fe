@@ -7,7 +7,7 @@ import { ReviewSurface } from "@/components/review/review-surface";
 import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorNote, Skeleton } from "@/components/ui/feedback";
 import { usePosts } from "@/features/posts/hooks";
-import { isReviewable, type Post } from "@/lib/api/types";
+import { hasPreview, isReviewable, type Post } from "@/lib/api/types";
 import { toMessage } from "@/lib/api/errors";
 
 /**
@@ -21,16 +21,18 @@ export default function ReviewPage() {
   const posts = usePosts();
   const [index, setIndex] = React.useState(0);
 
+  // A post is reviewable once its design HTML exists — the PNGs are not
+  // rendered until it is approved, so waiting on them would empty the queue.
   const queue = React.useMemo(
     () =>
       (posts.data ?? [])
-        .filter((post: Post) => isReviewable(post) && post.composed?.pages?.length)
+        .filter((post: Post) => isReviewable(post) && hasPreview(post))
         .sort((a, b) => b.created_at.localeCompare(a.created_at)),
     [posts.data],
   );
 
   const pending = (posts.data ?? []).filter(
-    (post: Post) => isReviewable(post) && !post.composed?.pages?.length,
+    (post: Post) => isReviewable(post) && !hasPreview(post),
   );
 
   if (posts.isPending) {

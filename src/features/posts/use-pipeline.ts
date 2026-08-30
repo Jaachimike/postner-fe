@@ -3,23 +3,24 @@
 import * as React from "react";
 import { useCompose, useGenerateImages } from "@/features/posts/hooks";
 import { toMessage } from "@/lib/api/errors";
-import type { Post } from "@/lib/api/types";
+import { hasPreview, type Post } from "@/lib/api/types";
 
 export type StepState = "pending" | "running" | "done" | "skipped" | "error";
 
 export interface PipelineStep {
-  id: "draft" | "images" | "compose";
+  id: "draft" | "images" | "preview";
   label: string;
   state: StepState;
 }
 
 /**
- * Drives draft -> images -> compose to completion.
+ * Drives draft -> images -> HTML preview to completion.
  *
- * The API splits these deliberately (the draft is cheap, Recraft and the
- * Playwright render are not), but a person creating a post wants one outcome:
- * a finished preview. So we run the remaining legs automatically and surface
- * them as progress rather than as three buttons.
+ * It stops at the preview on purpose. `POST /compose` now only fills the
+ * template HTML; the Playwright render and the storage upload happen at
+ * approval (`POST /feedback`) or on an explicit `POST /render`. Nothing here
+ * should ever trigger a PNG — that is the whole point of the split, so that we
+ * only rasterise designs a person actually kept.
  */
 export function usePostPipeline(post: Post | undefined) {
   const postId = post?.id ?? "";
@@ -29,7 +30,7 @@ export function usePostPipeline(post: Post | undefined) {
 
   // Text-only packs need no Recraft pass at all.
   const needsImages = (post?.content?.pack_images_needed ?? 1) > 0;
-  const isComposed = Boolean(post?.composed?.pages?.length);
+  const isReady = Boolean(post && hasPreview(post));
   const hasImages = Object.keys(post?.images ?? {}).length > 0;
 
   const started = React.useRef(false);
@@ -51,10 +52,10 @@ export function usePostPipeline(post: Post | undefined) {
   }, [post, needsImages, hasImages]);
 
   React.useEffect(() => {
-    if (!post || isComposed || started.current) return;
+    if (!post || isReady || started.current) return;
     started.current = true;
     void run();
-  }, [post, isComposed, run]);
+  }, [post, isReady, run]);
 
   function retry() {
     started.current = true;
@@ -72,16 +73,16 @@ export function usePostPipeline(post: Post | undefined) {
           ? "running"
           : hasImages
             ? "done"
-            : error && !isComposed
+            : error && !isReady
               ? "error"
               : "pending",
     },
     {
-      id: "compose",
-      label: "Composing design",
+      id: "preview",
+      label: "Building the design",
       state: compose.isPending
         ? "running"
-        : isComposed
+        : isReady
           ? "done"
           : error
             ? "error"
@@ -94,6 +95,6 @@ export function usePostPipeline(post: Post | undefined) {
     error,
     retry,
     isRunning: images.isPending || compose.isPending,
-    isComposed,
+    isReady,
   };
 }

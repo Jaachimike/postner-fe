@@ -73,7 +73,6 @@ function CopyTab({ post, onDone }: { post: Post; onDone: () => void }) {
   const [slideIndex, setSlideIndex] = React.useState(0);
   const [slide, setSlide] = React.useState(() => ({ ...(slides[0] ?? {}) }));
   const [overlay, setOverlay] = React.useState(post.content?.overlay_text ?? "");
-  const [recompose, setRecompose] = React.useState(true);
 
   function selectSlide(index: number) {
     setSlideIndex(index);
@@ -84,8 +83,11 @@ function CopyTab({ post, onDone }: { post: Post; onDone: () => void }) {
     const text = pack
       ? { slides: slides.map((entry, index) => (index === slideIndex ? slide : entry)) }
       : { overlay_text: overlay };
+    // Always re-fill: `recompose` only fills HTML now, so there is nothing to
+    // save by skipping it, and skipping would leave the preview showing copy
+    // the post no longer has.
     rewrite.mutate(
-      { caption, text, suggest, recompose },
+      { caption, text, suggest, recompose: true },
       { onSuccess: onDone },
     );
   }
@@ -162,16 +164,6 @@ function CopyTab({ post, onDone }: { post: Post; onDone: () => void }) {
           />
         </Field>
       )}
-
-      <div className="rounded-xl border border-border bg-bg p-4">
-        <Toggle
-          id="edit_recompose"
-          checked={recompose}
-          onCheckedChange={setRecompose}
-          label="Re-render the preview"
-          hint="Off saves the text without regenerating the image."
-        />
-      </div>
 
       <div className="flex gap-2">
         <Button

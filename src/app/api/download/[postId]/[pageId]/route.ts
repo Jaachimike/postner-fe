@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { apiFetch } from "@/lib/api/server";
 import { readSessionToken } from "@/lib/auth/session";
-import type { ComposedPage, Post } from "@/lib/api/types";
+import { pageImageUrl, type ComposedPage, type Post } from "@/lib/api/types";
 
 export const runtime = "nodejs";
 export const dynamic = "force-dynamic";
@@ -38,22 +38,22 @@ export async function GET(_request: Request, context: Context) {
     return NextResponse.json({ detail: "Page not composed" }, { status: 404 });
   }
 
-  if (!page.url || !/^https?:\/\//i.test(page.url)) {
+  // Pages carry a `url` only once rendered: the API uploads the PNG to object
+  // storage and deletes its local copy, so there is no other way to reach it.
+  const source = pageImageUrl(page);
+  if (!source) {
     return NextResponse.json(
-      {
-        detail:
-          "This page exists only on the API's local disk. Run the API with STORAGE_BACKEND=s3 to make composed assets downloadable.",
-      },
+      { detail: "This page has not been rendered yet. Approve the post first." },
       { status: 409 },
     );
   }
 
-  const upstream = await fetch(page.url, { cache: "no-store" });
+  const upstream = await fetch(source, { cache: "no-store" });
   if (!upstream.ok || !upstream.body) {
     return NextResponse.json({ detail: "Asset unavailable" }, { status: 502 });
   }
 
-  const extension = page.url.split(".").pop()?.split(/[?#]/)[0] ?? "png";
+  const extension = source.split(".").pop()?.split(/[?#]/)[0] ?? "png";
   const filename = `${post.format}-${String(page.index).padStart(2, "0")}-${page.page_id}.${extension}`;
 
   return new NextResponse(upstream.body, {

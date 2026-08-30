@@ -45,11 +45,27 @@ async function forward(request: Request, context: Context) {
   });
 
   const payload = await upstream.text();
+  const upstreamType = upstream.headers.get("content-type") ?? "";
+
+  // The API has endpoints that return post markup as text/html (for example
+  // /posts/{id}/pages/{id}/html). That markup is assembled from LLM output
+  // derived from scraped pages, and forwarding it verbatim would serve
+  // attacker-influenced HTML from *our* origin — the one holding the session
+  // cookie and this credentialed proxy. Preview HTML reaches the client as a
+  // JSON string field instead, and gets rendered in a sandboxed iframe.
+  if (payload && upstreamType && !/^application\/(json|problem\+json)/i.test(upstreamType)) {
+    return NextResponse.json(
+      { detail: `Blocked a non-JSON API response (${upstreamType}).` },
+      { status: 502 },
+    );
+  }
+
   return new NextResponse(payload || null, {
     status: upstream.status,
     headers: {
-      "content-type": upstream.headers.get("content-type") ?? "application/json",
+      "content-type": "application/json",
       "cache-control": "no-store",
+      "x-content-type-options": "nosniff",
     },
   });
 }
