@@ -13,7 +13,12 @@ export function usePosts() {
   return useQuery({
     queryKey: queryKeys.posts,
     queryFn: async () => {
-      const result = await api.GET("/posts");
+      // The list endpoint omits page markup by default; the review queue
+      // renders straight from this response (no per-post detail fetch), so
+      // it opts back in.
+      const result = await api.GET("/posts", {
+        params: { query: { include: "html" } },
+      });
       return unwrap<{ posts: Post[] }>(result).posts;
     },
   });

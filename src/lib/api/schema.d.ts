@@ -203,7 +203,13 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /** List Posts */
+        /**
+         * List Posts
+         * @description List posts. Pass ?include=html to embed each page's preview markup.
+         *
+         *     Full HTML is omitted by default: a queue load can be dozens of posts,
+         *     each with several pages, and most callers only need metadata.
+         */
         get: operations["list_posts_posts_get"];
         put?: never;
         /** Create Post */
@@ -1272,7 +1278,9 @@ export interface operations {
     };
     list_posts_posts_get: {
         parameters: {
-            query?: never;
+            query?: {
+                include?: string | null;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -1286,6 +1294,15 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListPostsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
