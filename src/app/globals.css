@@ -32,6 +32,38 @@
   --color-edit: #3b82f6;
   --color-approve: #10b981;
 
+  /* ---------------------------------------------------------------------
+     Platform chrome.
+
+     These are the platforms' own values, not Postner's. The review card
+     impersonates the destination so a draft is judged in the frame it will
+     actually appear in — see `src/components/post/chrome/index.tsx`.
+
+     The two black surfaces (X, TikTok) and the letterbox fill use Tailwind's
+     built-in `black` / `white`; they need no token.
+  --------------------------------------------------------------------- */
+
+  /* Shared by the two light cards (Instagram, Facebook), which sit on --color-surface. */
+  --color-social-ink: #0f0f0f;
+  --color-social-muted: #6b7075;
+  --color-social-border: #d8dadd;
+
+  --color-ig-accent: #0095f6;
+  --color-ig-ring-start: #f9ce34;
+  --color-ig-ring-mid: #ee2a7b;
+  --color-ig-ring-end: #6228d7;
+
+  --color-fb-accent: #1877f2;
+  --color-fb-tint: #f0f2f5;
+
+  --color-x-elevated: #16181c;
+  --color-x-ink: #e7e9ea;
+  --color-x-muted: #71767b;
+  --color-x-border: #2f3336;
+  --color-x-accent: #1d9bf0;
+
+  --color-tt-accent: #fe2c55;
+
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, monospace;
 

@@ -84,6 +84,11 @@ export function HtmlPreview({
           sandbox=""
           referrerPolicy="no-referrer"
           loading="lazy"
+          // An iframe is focusable by default, so without this every mounted
+          // slide is a tab stop that lands the user inside an empty sandboxed
+          // document. There is nothing to reach in there: `sandbox=""` already
+          // makes the content inert.
+          tabIndex={-1}
           style={{
             position: "absolute",
             top: 0,
@@ -102,12 +107,17 @@ export function HtmlPreview({
   );
 }
 
+/**
+ * Why this inherits `currentColor` instead of naming a token: the note appears
+ * on the dark review card, on the light download sheet, and on the black
+ * letterbox behind a preview. Any fixed pair is invisible on one of them.
+ */
 export function PreviewNote({ title, body }: { title: string; body: string }) {
   return (
     <div className="flex size-full flex-col items-center justify-center gap-2 px-6 text-center">
-      <ImageOff className="size-6 text-card-muted" aria-hidden />
-      <p className="text-sm font-medium text-card-ink">{title}</p>
-      <p className="max-w-xs text-xs leading-relaxed text-card-muted">{body}</p>
+      <ImageOff className="size-6 opacity-60" aria-hidden />
+      <p className="text-sm font-medium">{title}</p>
+      <p className="max-w-xs text-xs leading-relaxed opacity-70">{body}</p>
     </div>
   );
 }

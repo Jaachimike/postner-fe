@@ -1,160 +1,158 @@
 "use client";
 
-import * as React from "react";
-import {
-  BadgeCheck,
-  BarChart2,
-  Heart,
-  MessageCircle,
-  Repeat2,
-  Info,
-} from "lucide-react";
+import { Info } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
-import { HtmlPreview, PreviewNote } from "@/components/ui/html-preview";
+import { PreviewNote } from "@/components/ui/html-preview";
+import { PostChrome } from "@/components/post/chrome";
+import { chromeMedia } from "@/components/post/chrome/meta";
+import { MediaFrame } from "@/components/post/media-frame";
+import { PostCarousel } from "@/components/post/post-carousel";
 import {
-  composedPages,
+  findSlide,
   needsRecompose,
-  pageDimensions,
-  pagePreviewHtml,
+  postCaption,
   postHandle,
+  previewPages,
+  slideCaption,
   type Post,
 } from "@/lib/api/types";
-import { aspectRatio, formatLabel } from "@/lib/formats";
+import { aspectRatio, formatLabel, isImmersive } from "@/lib/formats";
 import type { Brand } from "@/lib/api/types";
 
 /**
- * The review card, per docs/review-screen-reference.png.
+ * The review card.
  *
- * Deliberately inverted against the light app canvas: the thing you made is
- * the dark object in a quiet room. It also borrows platform chrome (avatar,
- * handle, action glyphs) so the draft is judged as it will actually appear.
+ * It wears the chrome of the platform the post is destined for — see
+ * `chrome/index.tsx` — so the draft is judged in the frame it will actually
+ * appear in rather than as a tweet regardless of format. The app canvas stays
+ * light either way; only the card changes.
+ *
+ * Two things worth knowing before editing:
+ *
+ *  - The format's frame wins over the design's own size. Every pack page
+ *    hardcodes 1080×1350 whatever the post's format is, so a 16:9 X post shows
+ *    a letterboxed 4:5 design. That is the honest depiction of the crop the
+ *    render will apply, not a layout bug.
+ *  - The platform's action glyphs are decorative and hidden from assistive
+ *    tech. The real actions are the FABs below the card.
  */
 export function PostCard({
   post,
   brand,
+  slideIndex,
+  onSlideIndexChange,
   className,
 }: {
   post: Post;
   brand?: Brand;
+  /**
+   * Controlled: the visible slide lives in `ReviewSurface` so the reject and
+   * edit sheets can open on the slide being looked at. See the comment there
+   * for why they are handed a `page_id` rather than this number.
+   */
+  slideIndex: number;
+  onSlideIndexChange: (index: number) => void;
   className?: string;
 }) {
-  const pages = composedPages(post);
-  const [page, setPage] = React.useState(0);
-  const current = pages[Math.min(page, Math.max(pages.length - 1, 0))];
-  const html = current ? pagePreviewHtml(current) : null;
-  const size = current ? pageDimensions(current, post.format) : null;
+  // Only pages with markup: a dot that leads to "preview not ready" is a dot
+  // that lies about what is reviewable. The queue gate already admits posts on
+  // this basis, so this aligns the pager with it.
+  const pages = previewPages(post);
+  const index = Math.min(slideIndex, Math.max(pages.length - 1, 0));
+
   const stale = needsRecompose(post);
+  const hasDesign = !stale && pages.length > 0;
+  const media = chromeMedia(post.format);
+
+  // An immersive chrome floats one caption over the media and has no room for
+  // the carousel's own copy line, so for those formats the slide's copy becomes
+  // the overlay — which is the more useful of the two when reviewing a pack.
+  const slide = slideCaption(findSlide(post.content?.slides, pages[index]?.page_id ?? ""));
+  const caption =
+    isImmersive(post.format) && slide
+      ? [slide.title, slide.body].filter(Boolean).join(" ")
+      : postCaption(post);
 
   const displayName = brand?.name ?? post.content?.brand ?? "Your brand";
-  const body =
-    post.content?.ig_fb_caption ??
-    post.content?.overlay_text ??
-    post.content?.slides?.[page]?.body ??
-    "";
+  const identity = {
+    displayName,
+    handle: postHandle(displayName),
+    logo: brand?.logo ?? null,
+    initial: displayName.slice(0, 1).toUpperCase(),
+  };
 
   return (
-    <article
+    <div
       className={cn(
-        "flex flex-col gap-4 rounded-card bg-card p-5 text-card-ink shadow-xl shadow-ink/10",
+        "flex flex-col gap-3",
+        // A 9:16 frame at the review column's full width would stand nearly a
+        // thousand pixels tall and push the FABs off-screen. Capping here
+        // rather than in the chrome keeps the meta line under the card aligned
+        // with it.
+        isImmersive(post.format) && "mx-auto w-full max-w-[20rem]",
         className,
       )}
     >
-      <header className="flex items-center gap-3">
-        <span className="grid size-10 shrink-0 place-items-center overflow-hidden rounded-full bg-card-elevated text-sm font-semibold text-card-muted">
-          {brand?.logo ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img src={brand.logo} alt="" className="size-full object-cover" />
-          ) : (
-            displayName.slice(0, 1).toUpperCase()
-          )}
-        </span>
-        <div className="min-w-0">
-          <p className="flex items-center gap-1 text-[0.9375rem] font-semibold leading-tight">
-            <span className="truncate">{displayName}</span>
-            <BadgeCheck className="size-4 shrink-0 text-accent" aria-hidden />
-          </p>
-          <p className="truncate text-sm text-card-muted">{postHandle(displayName)}</p>
-        </div>
-      </header>
-
-      {body ? (
-        <p className="whitespace-pre-wrap text-[0.9375rem] font-medium leading-[1.55]">
-          {body}
-        </p>
-      ) : null}
-
-      {pages.length > 0 ? (
-        <figure className="flex flex-col gap-2">
-          {stale ? (
-            <div
-              className="relative w-full overflow-hidden rounded-xl bg-card-elevated"
-              style={{ aspectRatio: aspectRatio(post.format) }}
-            >
-              <PreviewNote
-                title="Photos need rebuilding"
-                body="This post was made before images moved to storage, so its photos cannot load. Edit it, or generate new photos, to rebuild the design."
-              />
-            </div>
-          ) : html && size ? (
-            <HtmlPreview
-              html={html}
-              width={size.width}
-              height={size.height}
-              title={`${formatLabel(post.format)} preview, page ${page + 1}`}
-              className="rounded-xl bg-card-elevated"
+      <PostChrome
+        post={post}
+        brand={brand}
+        identity={identity}
+        caption={caption}
+        hasDesign={hasDesign}
+        media={
+          hasDesign ? (
+            <PostCarousel
+              pages={pages}
+              slides={post.content?.slides}
+              format={post.format}
+              index={index}
+              onIndexChange={onSlideIndexChange}
+              variant={media.variant}
+              frameClassName={media.frameClassName}
             />
           ) : (
-            <div
-              className="relative w-full overflow-hidden rounded-xl bg-card-elevated"
-              style={{ aspectRatio: aspectRatio(post.format) }}
+            <MediaFrame
+              frameAspect={aspectRatio(post.format)}
+              className={media.frameClassName}
             >
-              <PreviewNote
-                title="Preview not ready"
-                body="The design has not been built for this page yet. Re-run the edit, or compose the post again."
-              />
-            </div>
-          )}
-
-          {pages.length > 1 ? (
-            <div className="flex items-center justify-center gap-1.5 pt-0.5">
-              {pages.map((entry, index) => (
-                <button
-                  key={entry.page_id}
-                  type="button"
-                  aria-label={`Slide ${index + 1} of ${pages.length}`}
-                  aria-current={index === page}
-                  onClick={() => setPage(index)}
-                  className={cn(
-                    "h-1.5 rounded-full transition-all duration-200",
-                    index === page ? "w-5 bg-card-ink" : "w-1.5 bg-card-muted/50",
-                  )}
+              {stale ? (
+                <PreviewNote
+                  title="Photos need rebuilding"
+                  body="This post was made before images moved to storage, so its photos cannot load. Edit it, or generate new photos, to rebuild the design."
                 />
-              ))}
-            </div>
-          ) : null}
-        </figure>
-      ) : null}
+              ) : (
+                <PreviewNote
+                  title="Preview not ready"
+                  body="The design has not been built for this page yet. Re-run the edit, or compose the post again."
+                />
+              )}
+            </MediaFrame>
+          )
+        }
+      />
 
-      <div className="flex items-center gap-8 border-t border-card-border pt-3 text-card-muted">
-        {[MessageCircle, Repeat2, Heart, BarChart2].map((Icon, index) => (
-          <Icon key={index} className="size-[1.125rem]" aria-hidden />
-        ))}
-      </div>
+      <PostMeta post={post} />
+    </div>
+  );
+}
 
-      <footer className="flex flex-col gap-1.5 text-sm">
-        <p className="text-card-muted">
-          {formatLabel(post.format)}
-          {pages.length > 1 ? ` · ${pages.length} slides` : ""}
+/**
+ * Postner's own notes about the draft, deliberately outside the platform
+ * surface: the format label belongs to the review tool, not to the post.
+ * The slide count is not repeated here — the carousel's counter says it.
+ */
+function PostMeta({ post }: { post: Post }) {
+  return (
+    <footer className="flex flex-col gap-1.5 px-1 text-sm">
+      <p className="text-ink-muted">{formatLabel(post.format)}</p>
+      {post.content?.source_title ? (
+        <p className="flex items-start gap-1.5 text-ink-muted">
+          <Info className="mt-0.5 size-3.5 shrink-0 text-accent" aria-hidden />
+          <span className="min-w-0">
+            Drafted from &ldquo;{post.content.source_title}&rdquo;
+          </span>
         </p>
-        {post.content?.source_title ? (
-          <p className="flex items-start gap-1.5 text-accent">
-            <Info className="mt-0.5 size-3.5 shrink-0" aria-hidden />
-            <span className="min-w-0">
-              Drafted from &ldquo;{post.content.source_title}&rdquo;
-            </span>
-          </p>
-        ) : null}
-      </footer>
-    </article>
+      ) : null}
+    </footer>
   );
 }

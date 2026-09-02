@@ -166,6 +166,57 @@ export function previewPages(post: Post): ComposedPage[] {
 }
 
 /**
+ * The slide copy for a composed page.
+ *
+ * Joined by `page_id`, never by array position: `composed.pages` is sorted by
+ * `index`, `content.slides` arrives in whatever order the model emitted, and
+ * the two are only guaranteed to agree by id. Indexing positionally reads the
+ * wrong slide's copy the moment they diverge, and does it silently.
+ */
+export function findSlide(
+  slides: CarouselSlide[] | undefined,
+  pageId: string,
+): CarouselSlide | null {
+  return slides?.find((slide) => slide.page_id === pageId) ?? null;
+}
+
+/**
+ * What one slide says, for the carousel pager.
+ *
+ * A slide has no single caption field — the copy is spread across `title`,
+ * `subtitle`, `body` and `cta`, and which of them a template actually fills
+ * varies by page type. So take the first two that are populated rather than
+ * assuming a shape and rendering a blank line for half the pack.
+ */
+export function slideCaption(
+  slide: CarouselSlide | null,
+): { title: string; body: string } | null {
+  if (!slide) return null;
+  const parts = [slide.title, slide.subtitle, slide.body, slide.cta]
+    .map((value) => value?.trim())
+    .filter((value): value is string => Boolean(value));
+  if (parts.length === 0) return null;
+  return { title: parts[0], body: parts[1] ?? "" };
+}
+
+/**
+ * The caption the post publishes with.
+ *
+ * Constant across slides, unlike `slideCaption`. Keeping the two apart is the
+ * point: `ig_fb_caption` is the post's caption, `slides[n]` is the copy printed
+ * on slide n, and collapsing them into one fallback chain (as this file's
+ * callers used to) yields either a caption that never varies or one that
+ * mutates as you swipe — and no platform does the latter.
+ */
+export function postCaption(post: Post): string {
+  return (
+    post.content?.ig_fb_caption?.trim() ||
+    post.content?.overlay_text?.trim() ||
+    ""
+  );
+}
+
+/**
  * The markup still points at `file://` assets.
  *
  * Posts composed before the API moved to object storage embed container-local

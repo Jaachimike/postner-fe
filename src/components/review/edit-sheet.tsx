@@ -11,17 +11,20 @@ import { ErrorNote } from "@/components/ui/feedback";
 import { cn } from "@/lib/utils/cn";
 import { useVariants } from "@/features/catalog/hooks";
 import { useRedesign, useRevisions, useRewrite, useUndo } from "@/features/posts/hooks";
-import { isPack, type Post } from "@/lib/api/types";
+import { isPack, type CarouselSlide, type Post } from "@/lib/api/types";
 import { toMessage } from "@/lib/api/errors";
 
 export function EditSheet({
   post,
   open,
   onOpenChange,
+  defaultPageId,
 }: {
   post: Post;
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  /** The slide the reviewer is looking at, so Copy opens on it. */
+  defaultPageId?: string;
 }) {
   return (
     <Sheet
@@ -53,8 +56,20 @@ export function EditSheet({
           ))}
         </Tabs.List>
 
-        <Tabs.Content value="copy" className="outline-none">
-          <CopyTab post={post} onDone={() => onOpenChange(false)} />
+        {/* `forceMount` because Radix unmounts inactive tab content, which would
+            discard typed-but-unsaved copy on a trip to the Look tab and back.
+            The sheet itself still unmounts on close, so opening is a fresh
+            start — that reset is what seeds the draft from the current post. */}
+        <Tabs.Content
+          value="copy"
+          forceMount
+          className="outline-none data-[state=inactive]:hidden"
+        >
+          <CopyTab
+            post={post}
+            defaultPageId={defaultPageId}
+            onDone={() => onOpenChange(false)}
+          />
         </Tabs.Content>
         <Tabs.Content value="look" className="outline-none">
           <LookTab post={post} onDone={() => onOpenChange(false)} />
@@ -64,24 +79,58 @@ export function EditSheet({
   );
 }
 
-function CopyTab({ post, onDone }: { post: Post; onDone: () => void }) {
+function CopyTab({
+  post,
+  defaultPageId,
+  onDone,
+}: {
+  post: Post;
+  defaultPageId?: string;
+  onDone: () => void;
+}) {
   const rewrite = useRewrite(post.id);
   const pack = isPack(post);
   const slides = post.content?.slides ?? [];
 
   const [caption, setCaption] = React.useState(post.content?.ig_fb_caption ?? "");
-  const [slideIndex, setSlideIndex] = React.useState(0);
-  const [slide, setSlide] = React.useState(() => ({ ...(slides[0] ?? {}) }));
   const [overlay, setOverlay] = React.useState(post.content?.overlay_text ?? "");
 
-  function selectSlide(index: number) {
-    setSlideIndex(index);
-    setSlide({ ...(slides[index] ?? {}) });
+  /**
+   * Every slide's copy, not just the selected one.
+   *
+   * Holding one slide meant switching the picker re-read that slide from props
+   * and threw away whatever had been typed for the slide being left, and the
+   * submit spliced only the in-memory slide back in — so editing slide 1 then
+   * slide 2 saved slide 2 and silently reverted slide 1.
+   *
+   * Keyed by `page_id` rather than position because `content.slides` and
+   * `composed.pages` agree only by id, and the selected slide arrives from the
+   * carousel as an id for the same reason.
+   *
+   * Seeded once: this component lives inside `<Sheet>`, which unmounts its
+   * children on close, so each open starts from the post's current copy.
+   */
+  const [draft, setDraft] = React.useState<Record<string, CarouselSlide>>(() =>
+    Object.fromEntries(slides.map((entry) => [entry.page_id, { ...entry }])),
+  );
+  const [pageId, setPageId] = React.useState(() =>
+    defaultPageId && slides.some((entry) => entry.page_id === defaultPageId)
+      ? defaultPageId
+      : (slides[0]?.page_id ?? ""),
+  );
+
+  const slide: CarouselSlide = draft[pageId] ?? { page_id: pageId };
+
+  function setField(key: keyof CarouselSlide, value: string) {
+    setDraft((prev) => ({
+      ...prev,
+      [pageId]: { ...(prev[pageId] ?? { page_id: pageId }), [key]: value },
+    }));
   }
 
   function apply(suggest: boolean) {
     const text = pack
-      ? { slides: slides.map((entry, index) => (index === slideIndex ? slide : entry)) }
+      ? { slides: slides.map((entry) => draft[entry.page_id] ?? entry) }
       : { overlay_text: overlay };
     // Always re-fill: `recompose` only fills HTML now, so there is nothing to
     // save by skipping it, and skipping would leave the preview showing copy
@@ -110,11 +159,11 @@ function CopyTab({ post, onDone }: { post: Post; onDone: () => void }) {
           <Field label="Slide" htmlFor="edit_slide">
             <Select
               id="edit_slide"
-              value={String(slideIndex)}
-              onChange={(event) => selectSlide(Number(event.target.value))}
+              value={pageId}
+              onChange={(event) => setPageId(event.target.value)}
             >
               {slides.map((entry, index) => (
-                <option key={entry.page_id} value={index}>
+                <option key={entry.page_id} value={entry.page_id}>
                   {index + 1}. {entry.title || entry.page_id}
                 </option>
               ))}
@@ -137,17 +186,13 @@ function CopyTab({ post, onDone }: { post: Post; onDone: () => void }) {
                     id={`edit_${key}`}
                     rows={3}
                     value={slide[key] ?? ""}
-                    onChange={(event) =>
-                      setSlide((prev) => ({ ...prev, [key]: event.target.value }))
-                    }
+                    onChange={(event) => setField(key, event.target.value)}
                   />
                 ) : (
                   <Input
                     id={`edit_${key}`}
                     value={slide[key] ?? ""}
-                    onChange={(event) =>
-                      setSlide((prev) => ({ ...prev, [key]: event.target.value }))
-                    }
+                    onChange={(event) => setField(key, event.target.value)}
                   />
                 )}
               </Field>
@@ -284,7 +329,9 @@ function LookTab({ post, onDone }: { post: Post; onDone: () => void }) {
           size="sm"
           disabled={!revisions.data?.length}
           loading={undo.isPending}
-          onClick={() => undo.mutate()}
+          // Close on success like every other action here: an undo changes the
+          // design, and the point of undoing is to look at what you got back.
+          onClick={() => undo.mutate(undefined, { onSuccess: onDone })}
         >
           <Undo2 className="size-4" aria-hidden />
           Undo last change

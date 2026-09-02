@@ -65,13 +65,14 @@ src/
   proxy.ts             route protection
   components/
     ui/                button, field, chip, sheet, switch, feedback, logo
-    post/              post-card, fab-row, generating
+    post/              post-card, post-carousel, media-frame, fab-row, generating
+    post/chrome/       per-platform review chrome (ig / fb / x / tiktok)
     review/            review-surface + reject / edit / download sheets
     brand/             brand-form
   features/            auth, brands, posts, catalog — hooks + screen-level forms
   lib/
     api/               generated schema, typed clients, domain types
-    formats.ts         the six post formats, labels, dimensions
+    formats.ts         the six post formats — labels, dimensions, platform
 ```
 
 ### Design system
@@ -84,9 +85,15 @@ Two rules that are easy to get wrong:
 
 - **Accent green takes dark text**, not white — `text-accent-ink` on
   `bg-accent`. White on `#9FC131` fails AA.
-- **The app canvas is light; the post card is dark.** That inversion is the
-  identity, per `backend/docs/review-screen-reference.png`. Do not put the app
-  in dark mode to match the card.
+- **The app canvas is light; the post card wears the destination platform.**
+  Light for Instagram and Facebook, black for X and TikTok — see
+  `src/components/post/chrome/`. A draft judged in the wrong frame is judged
+  against the wrong constraints, which is why the card impersonates rather than
+  keeping one house style. Do not put the *app* in dark mode to match a card,
+  and do not restore a single dark card "for consistency" — it was the previous
+  design, per `backend/docs/review-screen-reference.png`, and it is gone on
+  purpose. Platform values live in `@theme` behind the `social-` / `ig-` /
+  `fb-` / `x-` / `tt-` prefixes; never hard-code them either.
 
 ## Decisions worth knowing
 

@@ -7,7 +7,7 @@ import { ChipGroup } from "@/components/ui/chip";
 import { Field, Textarea } from "@/components/ui/field";
 import { ErrorNote } from "@/components/ui/feedback";
 import { useFeedback } from "@/features/posts/hooks";
-import { REJECT_REASONS, composedPages, type Post } from "@/lib/api/types";
+import { REJECT_REASONS, previewPages, type Post } from "@/lib/api/types";
 import { toMessage } from "@/lib/api/errors";
 
 export function RejectSheet({
@@ -15,18 +15,38 @@ export function RejectSheet({
   open,
   onOpenChange,
   onRejected,
+  defaultPageId,
 }: {
   post: Post;
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onRejected: () => void;
+  /** The slide the reviewer is looking at, pre-selected as the scope. */
+  defaultPageId?: string;
 }) {
   const feedback = useFeedback(post.id);
   const [reasons, setReasons] = React.useState<string[]>([]);
   const [note, setNote] = React.useState("");
   const [pageId, setPageId] = React.useState("");
 
-  const pages = composedPages(post);
+  /**
+   * Seed the scope on each open.
+   *
+   * Unlike the edit sheet's tabs, this state sits on the component that stays
+   * mounted while the sheet is closed, so there is no remount to seed from.
+   * Setting during render off a stored previous value is the pattern React
+   * documents for this; an effect would trip `react-hooks/set-state-in-effect`.
+   */
+  const [seenOpen, setSeenOpen] = React.useState(open);
+  if (seenOpen !== open) {
+    setSeenOpen(open);
+    if (open) setPageId(defaultPageId ?? "");
+  }
+
+  // Must match the carousel exactly: a chip labelled "Slide 3" that sends a
+  // different page_id than the third slide the reviewer swiped to would put
+  // wrong feedback on the record, silently.
+  const pages = previewPages(post);
   // The API accepts an empty rejection, but a reason is the entire point of
   // capturing one — it is what teaches the next draft.
   const canSubmit = reasons.length > 0 || note.trim().length > 0;

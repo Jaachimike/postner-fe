@@ -10,8 +10,9 @@ import { DownloadSheet } from "@/components/review/download-sheet";
 import { ErrorNote, Spinner } from "@/components/ui/feedback";
 import { useFeedback } from "@/features/posts/hooks";
 import { useBrands } from "@/features/brands/hooks";
+import { useSlideIndex } from "@/features/posts/use-slide-index";
 import { toMessage } from "@/lib/api/errors";
-import type { Post } from "@/lib/api/types";
+import { previewPages, type Post } from "@/lib/api/types";
 
 type Sheet = "none" | "reject" | "edit" | "download";
 
@@ -37,6 +38,19 @@ export function ReviewSurface({
   const reduceMotion = useReducedMotion();
 
   const brand = brands.data?.find((item) => item.id === post.brand_id);
+
+  /**
+   * The visible slide lives here, not in the card, so the sheets can open on
+   * the slide being looked at rather than always on the first one.
+   *
+   * It is identified downstream by `page_id`, never by this index: the pager
+   * walks `composed.pages` while the edit sheet walks `content.slides`, and
+   * those two arrays agree only by id. Passing the number would send the sheets
+   * to the wrong slide in exactly the cases this is meant to fix.
+   */
+  const pages = previewPages(post);
+  const slide = useSlideIndex(post.id, pages.length);
+  const activePageId = pages[slide.index]?.page_id ?? "";
 
   /**
    * Approving is the expensive step now: the API renders every page with
@@ -66,7 +80,12 @@ export function ReviewSurface({
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -12 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
           >
-            <PostCard post={post} brand={brand} />
+            <PostCard
+              post={post}
+              brand={brand}
+              slideIndex={slide.index}
+              onSlideIndexChange={slide.setIndex}
+            />
           </motion.div>
         </AnimatePresence>
       </div>
@@ -95,11 +114,13 @@ export function ReviewSurface({
         open={sheet === "reject"}
         onOpenChange={(open) => setSheet(open ? "reject" : "none")}
         onRejected={onAdvance}
+        defaultPageId={activePageId}
       />
       <EditSheet
         post={post}
         open={sheet === "edit"}
         onOpenChange={(open) => setSheet(open ? "edit" : "none")}
+        defaultPageId={activePageId}
       />
       <DownloadSheet
         post={post}
