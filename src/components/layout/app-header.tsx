@@ -21,7 +21,7 @@ export function AppHeader() {
     <header className="sticky top-0 z-30 border-b border-border/70 bg-bg/85 backdrop-blur-md">
       <div className="mx-auto flex h-14 w-full max-w-5xl items-center gap-3 px-4 sm:px-6">
         <Link href="/review" className="shrink-0 rounded-lg">
-          <Logo className="text-base text-ink" />
+          <Logo className="h-5" />
         </Link>
 
         <nav aria-label="Main" className="ml-2 flex min-w-0 items-center gap-0.5">

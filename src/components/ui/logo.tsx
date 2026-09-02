@@ -1,23 +1,22 @@
 import { cn } from "@/lib/utils/cn";
 
 /**
- * Postner wordmark: `<postner/>` with accent-green chevrons, per the review
- * screen reference. Text-based so it stays crisp at any size and inherits
- * currentColor for use on both light chrome and the dark post card.
+ * Postner wordmark: `<postner/>` with accent-green chevrons.
+ *
+ * `postner-wordmark.svg` is the brand artwork cropped to the lockup — the
+ * source `postner-logo.svg` centres it in a 2000×2000 #f3f3f3 tile, which at
+ * header size would shrink the wordmark to a few pixels. The mark carries its
+ * own brand colours, so size it with a height (`h-*`) rather than `text-*`.
  */
 export function Logo({ className }: { className?: string }) {
   return (
-    <span
-      className={cn(
-        "inline-flex select-none items-center font-semibold tracking-tight",
-        className,
-      )}
-      aria-label="Postner"
-      role="img"
-    >
-      <span aria-hidden className="text-accent">&lt;</span>
-      <span aria-hidden>postner</span>
-      <span aria-hidden className="text-accent">/&gt;</span>
-    </span>
+    // eslint-disable-next-line @next/next/no-img-element
+    <img
+      src="/postner-wordmark.svg"
+      alt="Postner"
+      width={1957}
+      height={404}
+      className={cn("h-6 w-auto select-none", className)}
+    />
   );
 }
