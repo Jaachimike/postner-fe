@@ -11,9 +11,10 @@ import { Toggle } from "@/components/ui/switch";
 import { EmptyState, ErrorNote, Skeleton } from "@/components/ui/feedback";
 import { cn } from "@/lib/utils/cn";
 import { FORMAT_META, formatDimensions, type PostFormat } from "@/lib/formats";
+import { IMAGE_STYLE_OPTIONS, type ImageStyleChoice } from "@/lib/image-styles";
 import { toMessage } from "@/lib/api/errors";
 import { useBrands } from "@/features/brands/hooks";
-import { usePacks, useTemplates, useVariants } from "@/features/catalog/hooks";
+import { usePacks, useTemplates } from "@/features/catalog/hooks";
 import { useCreatePost } from "@/features/posts/hooks";
 
 type Mode = "pack" | "template";
@@ -39,23 +40,19 @@ export function NewPostForm() {
   const [withImages, setWithImages] = React.useState(false);
 
   // Selections are held as overrides and resolved against live data below, so
-  // that changing brand cannot strand a format or palette the brand disallows.
+  // that changing brand cannot strand a format the brand disallows.
   const [brandOverride, setBrandOverride] = React.useState(params.get("brand") ?? "");
   const [formatOverride, setFormatOverride] = React.useState<PostFormat | "">("");
-  const [variantOverride, setVariantOverride] = React.useState("");
+  const [imageStyle, setImageStyle] = React.useState<ImageStyleChoice>("auto");
 
   const brandId = brandOverride || brands.data?.[0]?.id || "";
   const brand = brands.data?.find((item) => item.id === brandId);
-  const variants = useVariants(brandId || null);
 
   const allowed = (brand?.formats ?? []) as PostFormat[];
   const format: PostFormat | "" =
     formatOverride && allowed.includes(formatOverride)
       ? formatOverride
       : (allowed[0] ?? "");
-  const variantId = variants.data?.some((item) => item.id === variantOverride)
-    ? variantOverride
-    : "";
 
   if (brands.isPending) return <Skeleton className="h-96 rounded-2xl" />;
   if (brands.isError) return <ErrorNote message={toMessage(brands.error)} />;
@@ -92,7 +89,7 @@ export function NewPostForm() {
         pack_id: mode === "pack" ? packId || null : null,
         template_id: mode === "template" ? templateId || null : null,
         format: (format || null) as PostFormat | null,
-        variant_id: variantId || null,
+        image_style: imageStyle === "auto" ? null : imageStyle,
         with_images: withImages,
       },
       { onSuccess: (post) => router.push(`/posts/${post.id}`) },
@@ -227,22 +224,20 @@ export function NewPostForm() {
         </div>
       </Field>
 
-      {variants.data?.length ? (
-        <Field label="Colour variant" htmlFor="post_variant" optional>
-          <Select
-            id="post_variant"
-            value={variantId}
-            onChange={(event) => setVariantOverride(event.target.value)}
-          >
-            <option value="">Pack default</option>
-            {variants.data.map((variant) => (
-              <option key={variant.id} value={variant.id}>
-                {variant.label}
-              </option>
-            ))}
-          </Select>
-        </Field>
-      ) : null}
+      <Field
+        label="Image style"
+        htmlFor="post_image_style"
+        hint="Sets the look of photos Recraft generates. Auto picks one and keeps it for this post."
+      >
+        <div id="post_image_style">
+          <ChipGroup
+            ariaLabel="Image style"
+            options={IMAGE_STYLE_OPTIONS}
+            value={[imageStyle]}
+            onChange={(next) => setImageStyle((next[0] as ImageStyleChoice) ?? "auto")}
+          />
+        </div>
+      </Field>
 
       <div className="rounded-xl border border-border bg-surface p-4">
         <Toggle

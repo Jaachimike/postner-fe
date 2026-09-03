@@ -7,7 +7,6 @@ export type Brand = S["BrandOut"];
 export type CreateBrandBody = S["CreateBrandBody"];
 export type PatchBrandBody = S["PatchBrandBody"];
 export type Pack = S["PackSummary"];
-export type Variant = S["VariantOut"];
 export type Revision = S["RevisionItem"];
 export type TokenResponse = S["TokenResponse"];
 export type Me = S["MeResponse"];

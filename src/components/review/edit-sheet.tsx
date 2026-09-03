@@ -7,9 +7,10 @@ import { Sheet } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
 import { Toggle } from "@/components/ui/switch";
+import { ChipGroup } from "@/components/ui/chip";
 import { ErrorNote } from "@/components/ui/feedback";
 import { cn } from "@/lib/utils/cn";
-import { useVariants } from "@/features/catalog/hooks";
+import { CONCRETE_IMAGE_STYLE_OPTIONS, isImageStyle, type ImageStyle } from "@/lib/image-styles";
 import { useRedesign, useRevisions, useRewrite, useUndo } from "@/features/posts/hooks";
 import { isPack, type CarouselSlide, type Post } from "@/lib/api/types";
 import { toMessage } from "@/lib/api/errors";
@@ -231,10 +232,11 @@ function CopyTab({
 function LookTab({ post, onDone }: { post: Post; onDone: () => void }) {
   const redesign = useRedesign(post.id);
   const undo = useUndo(post.id);
-  const variants = useVariants(post.brand_id);
   const revisions = useRevisions(post.id);
 
-  const [variantId, setVariantId] = React.useState(post.variant_id ?? "");
+  const [imageStyle, setImageStyle] = React.useState<ImageStyle>(
+    isImageStyle(post.image_style) ? post.image_style : "realistic",
+  );
   const [regenerateImages, setRegenerateImages] = React.useState(false);
 
   return (
@@ -250,22 +252,21 @@ function LookTab({ post, onDone }: { post: Post; onDone: () => void }) {
       />
 
       <Field
-        label="Colour variant"
-        htmlFor="edit_variant"
-        hint="Palettes are stored per brand. Leave empty and propose a new one instead."
+        label="Image style"
+        htmlFor="edit_image_style"
+        hint="Photo, illustration, or graphics — applied to Recraft and to the visual prompt."
       >
-        <Select
-          id="edit_variant"
-          value={variantId}
-          onChange={(event) => setVariantId(event.target.value)}
-        >
-          <option value="">No change</option>
-          {(variants.data ?? []).map((variant) => (
-            <option key={variant.id} value={variant.id}>
-              {variant.label}
-            </option>
-          ))}
-        </Select>
+        <div id="edit_image_style">
+          <ChipGroup
+            ariaLabel="Image style"
+            options={CONCRETE_IMAGE_STYLE_OPTIONS}
+            value={[imageStyle]}
+            onChange={(next) => {
+              const nextStyle = next[0];
+              if (isImageStyle(nextStyle)) setImageStyle(nextStyle);
+            }}
+          />
+        </div>
       </Field>
 
       <div className="rounded-xl border border-border bg-bg p-4">
@@ -278,45 +279,21 @@ function LookTab({ post, onDone }: { post: Post; onDone: () => void }) {
         />
       </div>
 
-      <div className="flex gap-2">
-        <Button
-          variant="secondary"
-          className="flex-1"
-          loading={redesign.isPending}
-          onClick={() =>
-            redesign.mutate(
-              {
-                variant_id: null,
-                propose: true,
-                regenerate_images: regenerateImages,
-                recompose: true,
-              },
-              { onSuccess: onDone },
-            )
-          }
-        >
-          <Wand2 className="size-4" aria-hidden />
-          Propose palette
-        </Button>
-        <Button
-          className="flex-1"
-          disabled={!variantId}
-          loading={redesign.isPending}
-          onClick={() =>
-            redesign.mutate(
-              {
-                variant_id: variantId,
-                propose: false,
-                regenerate_images: regenerateImages,
-                recompose: true,
-              },
-              { onSuccess: onDone },
-            )
-          }
-        >
-          Apply look
-        </Button>
-      </div>
+      <Button
+        loading={redesign.isPending}
+        onClick={() =>
+          redesign.mutate(
+            {
+              image_style: imageStyle,
+              regenerate_images: regenerateImages,
+              recompose: true,
+            },
+            { onSuccess: onDone },
+          )
+        }
+      >
+        Apply look
+      </Button>
 
       <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
         <p className="text-xs text-ink-subtle">
