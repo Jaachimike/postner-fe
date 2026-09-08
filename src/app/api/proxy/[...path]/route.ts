@@ -47,12 +47,17 @@ async function forward(request: Request, context: Context) {
   const payload = await upstream.text();
   const upstreamType = upstream.headers.get("content-type") ?? "";
 
-  // The API has endpoints that return post markup as text/html (for example
-  // /posts/{id}/pages/{id}/html). That markup is assembled from LLM output
-  // derived from scraped pages, and forwarding it verbatim would serve
-  // attacker-influenced HTML from *our* origin — the one holding the session
-  // cookie and this credentialed proxy. Preview HTML reaches the client as a
-  // JSON string field instead, and gets rendered in a sandboxed iframe.
+  // Every API response this proxy forwards must be JSON.
+  //
+  // The API no longer has a text/html endpoint — /posts/{id}/pages/{id}/html
+  // was removed upstream — so this is now a standing guard rather than a fix
+  // for a specific route, and it is worth keeping as one. Post markup is
+  // assembled from LLM output derived from scraped pages, and forwarding any
+  // of it verbatim would serve attacker-influenced HTML from *our* origin, the
+  // one holding the session cookie and this credentialed proxy. Preview HTML
+  // reaches the client as a JSON string field instead, rendered in a sandboxed
+  // iframe. Anything that arrives as text/html here is a regression, and the
+  // 502 is how we would find out.
   if (payload && upstreamType && !/^application\/(json|problem\+json)/i.test(upstreamType)) {
     return NextResponse.json(
       { detail: `Blocked a non-JSON API response (${upstreamType}).` },

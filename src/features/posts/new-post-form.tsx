@@ -10,11 +10,12 @@ import { ChipGroup } from "@/components/ui/chip";
 import { Toggle } from "@/components/ui/switch";
 import { EmptyState, ErrorNote, Skeleton } from "@/components/ui/feedback";
 import { cn } from "@/lib/utils/cn";
-import { FORMAT_META, formatDimensions, type PostFormat } from "@/lib/formats";
+import { FORMAT_META, formatDimensions, formatLabel, type PostFormat } from "@/lib/formats";
 import { toMessage } from "@/lib/api/errors";
 import { useBrands } from "@/features/brands/hooks";
-import { usePacks, useTemplates, useVariants } from "@/features/catalog/hooks";
+import { usePacks, useTemplates } from "@/features/catalog/hooks";
 import { useCreatePost } from "@/features/posts/hooks";
+import { IMAGE_STYLES, type ImageStyle } from "@/lib/api/types";
 
 type Mode = "pack" | "template";
 
@@ -34,27 +35,36 @@ export function NewPostForm() {
   const [url, setUrl] = React.useState("");
   const [urlError, setUrlError] = React.useState<string | null>(null);
   const [mode, setMode] = React.useState<Mode>("pack");
-  const [packId, setPackId] = React.useState("");
+  const [packOverride, setPackOverride] = React.useState("");
   const [templateId, setTemplateId] = React.useState("basic");
   const [withImages, setWithImages] = React.useState(false);
 
-  // Selections are held as overrides and resolved against live data below, so
-  // that changing brand cannot strand a format or palette the brand disallows.
+  // Brand and format are held as overrides and resolved against live data
+  // below, so that changing brand cannot strand a format the brand disallows.
+  // Image style needs none of that: it is a fixed set, not brand-scoped.
   const [brandOverride, setBrandOverride] = React.useState(params.get("brand") ?? "");
   const [formatOverride, setFormatOverride] = React.useState<PostFormat | "">("");
-  const [variantOverride, setVariantOverride] = React.useState("");
+  const [imageStyle, setImageStyle] = React.useState<ImageStyle>("realistic");
 
   const brandId = brandOverride || brands.data?.[0]?.id || "";
   const brand = brands.data?.find((item) => item.id === brandId);
-  const variants = useVariants(brandId || null);
 
   const allowed = (brand?.formats ?? []) as PostFormat[];
   const format: PostFormat | "" =
     formatOverride && allowed.includes(formatOverride)
       ? formatOverride
       : (allowed[0] ?? "");
-  const variantId = variants.data?.some((item) => item.id === variantOverride)
-    ? variantOverride
+
+  // Packs now declare the formats they support, so offer only the ones that
+  // fit. A pack composed for 4:5 has roughly a third of the vertical room at
+  // 16:9, and the layouts do not survive it — better to hide the pack than to
+  // draw it at a shape it was never designed for. Resolved like the format
+  // above, so switching format cannot strand a pack that no longer applies.
+  const availablePacks = (packs.data ?? []).filter(
+    (pack) => !format || pack.formats.includes(format),
+  );
+  const packId = availablePacks.some((pack) => pack.id === packOverride)
+    ? packOverride
     : "";
 
   if (brands.isPending) return <Skeleton className="h-96 rounded-2xl" />;
@@ -92,7 +102,7 @@ export function NewPostForm() {
         pack_id: mode === "pack" ? packId || null : null,
         template_id: mode === "template" ? templateId || null : null,
         format: (format || null) as PostFormat | null,
-        variant_id: variantId || null,
+        image_style: imageStyle,
         with_images: withImages,
       },
       { onSuccess: (post) => router.push(`/posts/${post.id}`) },
@@ -161,14 +171,20 @@ export function NewPostForm() {
         {mode === "pack" ? (
           packs.isPending ? (
             <Skeleton className="h-28" />
+          ) : availablePacks.length === 0 ? (
+            <p className="rounded-xl border border-border bg-surface p-3.5 text-xs text-ink-muted">
+              {format
+                ? `No pack supports ${formatLabel(format)} yet. Pick another format, or use a single template.`
+                : "No packs available."}
+            </p>
           ) : (
             <div className="grid gap-2 sm:grid-cols-2">
-              {(packs.data ?? []).map((pack) => (
+              {availablePacks.map((pack) => (
                 <button
                   key={pack.id}
                   type="button"
                   aria-pressed={packId === pack.id}
-                  onClick={() => setPackId(pack.id)}
+                  onClick={() => setPackOverride(pack.id)}
                   className={cn(
                     "flex flex-col gap-1 rounded-xl border p-3.5 text-left transition-colors",
                     packId === pack.id
@@ -227,22 +243,20 @@ export function NewPostForm() {
         </div>
       </Field>
 
-      {variants.data?.length ? (
-        <Field label="Colour variant" htmlFor="post_variant" optional>
-          <Select
-            id="post_variant"
-            value={variantId}
-            onChange={(event) => setVariantOverride(event.target.value)}
-          >
-            <option value="">Pack default</option>
-            {variants.data.map((variant) => (
-              <option key={variant.id} value={variant.id}>
-                {variant.label}
-              </option>
-            ))}
-          </Select>
-        </Field>
-      ) : null}
+      <Field
+        label="Photo style"
+        htmlFor="post_image_style"
+        hint={IMAGE_STYLES.find((style) => style.value === imageStyle)?.hint}
+      >
+        <div id="post_image_style">
+          <ChipGroup
+            ariaLabel="Photo style"
+            options={IMAGE_STYLES.map(({ value, label }) => ({ value, label }))}
+            value={[imageStyle]}
+            onChange={(next) => setImageStyle(next[0] as ImageStyle)}
+          />
+        </div>
+      </Field>
 
       <div className="rounded-xl border border-border bg-surface p-4">
         <Toggle

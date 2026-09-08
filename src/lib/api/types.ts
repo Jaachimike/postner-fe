@@ -7,10 +7,50 @@ export type Brand = S["BrandOut"];
 export type CreateBrandBody = S["CreateBrandBody"];
 export type PatchBrandBody = S["PatchBrandBody"];
 export type Pack = S["PackSummary"];
-export type Variant = S["VariantOut"];
+export type ImageStyle = NonNullable<S["CreatePostRequest"]["image_style"]>;
 export type Revision = S["RevisionItem"];
 export type TokenResponse = S["TokenResponse"];
 export type Me = S["MeResponse"];
+
+/**
+ * The art direction a post's photos are generated in.
+ *
+ * Replaces the per-brand colour variants the API used to expose: the backend
+ * dropped `/variants` and `post.variant_id` and now maps each of these onto a
+ * Recraft style at generation time. So this changes the *photos*, not the
+ * palette — nothing here restyles the template's CSS.
+ */
+export const IMAGE_STYLES: readonly { value: ImageStyle; label: string; hint: string }[] = [
+  {
+    value: "realistic",
+    label: "Photographic",
+    hint: "Lifelike photos. The default, and the safest for lifestyle packs.",
+  },
+  {
+    value: "illustration",
+    label: "Illustrated",
+    hint: "Drawn, digital-illustration look.",
+  },
+  {
+    value: "graphics",
+    label: "Graphic",
+    hint: "Flat vector shapes. Strongest on text-led slides.",
+  },
+];
+
+/**
+ * Narrow the `image_style` a post is read back with.
+ *
+ * The API types it as a bare string on `PostResponse` while the request models
+ * are enums, so a post is typed wider than the values it can hold. Falling back
+ * to the column default keeps an unexpected value from selecting nothing in a
+ * picker and silently clearing the post's style on the next save.
+ */
+export function asImageStyle(value: string | null | undefined): ImageStyle {
+  return IMAGE_STYLES.some((style) => style.value === value)
+    ? (value as ImageStyle)
+    : "realistic";
+}
 
 /**
  * The OpenAPI schema types `content` / `images` / `composed` as open dicts
@@ -35,6 +75,42 @@ export interface CarouselSlide {
   visual_prompt?: string;
 }
 
+/**
+ * Markup the rewrite endpoint refuses.
+ *
+ * Mirrors `_MARKUP_RE` in the API's `app/posts/routes.py`, which rejects these
+ * tags and `javascript:` anywhere in a caption or slide — keep the two in step.
+ *
+ * The server check is the real one. This exists so a rejection can be shown on
+ * the field that caused it, rather than arriving as a sheet-level 422 reading
+ * "Value error, 'caption' contains disallowed markup" — which on a six-slide
+ * pack leaves you hunting for the input at fault. Treat a miss here as normal:
+ * anything this does not catch is still caught upstream.
+ */
+export const MARKUP_RE =
+  /<\s*\/?\s*(script|iframe|style|svg|object|embed|link|meta)\b|javascript:/i;
+
+export function hasMarkup(value: string | null | undefined): boolean {
+  return typeof value === "string" && MARKUP_RE.test(value);
+}
+
+/**
+ * One page of the pack, as snapshotted onto the post when it was drafted.
+ *
+ * The API writes this from `pack_field_schema()` at draft time rather than
+ * having clients read the pack, so editing a pack cannot retroactively change
+ * the shape of posts already drafted against it.
+ */
+export interface PackPage {
+  page_id: string;
+  index: number;
+  role: string;
+  tags: string[];
+  images: number;
+  /** Placeholder names this page's HTML actually fills. */
+  fields: string[];
+}
+
 export interface PostContent {
   mode?: "pack" | "single";
   post_type?: string;
@@ -49,6 +125,7 @@ export interface PostContent {
   tagline?: string;
   slides?: CarouselSlide[];
   pack_page_ids?: string[];
+  pack_pages?: PackPage[];
   pack_images_needed?: number;
 }
 
@@ -181,6 +258,24 @@ export function findSlide(
 }
 
 /**
+ * Which fields a given page of the pack actually fills, or null if unknown.
+ *
+ * Null is the honest answer for two real cases — posts drafted before the API
+ * started snapshotting `pack_pages`, and single-template posts, which never
+ * have it — and both need the caller to fall back rather than render an empty
+ * form. Matched on `page_id` rather than position: `pack_pages` and
+ * `content.slides` are built from the same sequence and line up today, but an
+ * id match costs nothing and survives them diverging.
+ */
+export function packPageFields(
+  content: PostContent | undefined,
+  pageId: string,
+): string[] | null {
+  const entry = content?.pack_pages?.find((page) => page.page_id === pageId);
+  return entry?.fields?.length ? entry.fields : null;
+}
+
+/**
  * What one slide says, for the carousel pager.
  *
  * A slide has no single caption field — the copy is spread across `title`,
@@ -252,11 +347,15 @@ export function downloadablePages(post: Post): ComposedPage[] {
 /**
  * The intrinsic canvas size to render a preview at.
  *
- * The API does not report per-page dimensions yet, and they cannot be derived
- * from `post.format`: every pack page hardcodes 1080×1350 in its own CSS
- * regardless of the post's format. So read the size out of the markup, and
- * keep the format as a last resort. Prefers `width`/`height` when the API
- * starts sending them.
+ * The API now reports `width` / `height` on each composed page, taken from the
+ * pack definition, so that is the answer whenever it is present.
+ *
+ * The regex behind it is no longer the normal path but is still load-bearing
+ * for posts composed before two backend changes landed: per-page dimensions,
+ * and driving the canvas from `post.format` at fill time. Those older pages
+ * carry a 1080×1350 canvas whatever format they claim, and reading it out of
+ * the markup is the only way to preview them at their true shape. Format is
+ * the last resort, and is right only for pages composed since.
  */
 const CANVAS_SIZE_RE =
   /(?:#canvas|html\s*,\s*body)\s*\{[^}]*?width:\s*(\d+)px[^}]*?height:\s*(\d+)px/i;

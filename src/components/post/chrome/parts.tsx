@@ -26,7 +26,10 @@ export function CardShell({
     <article
       aria-label={ariaLabel}
       className={cn(
-        "flex w-full flex-col overflow-hidden rounded-card",
+        // `flex-1 min-h-0` so the card takes the height the review surface
+        // gives it and the media slot inside can shrink — see the height chain
+        // described in `ReviewSurface`.
+        "flex w-full min-h-0 flex-1 flex-col overflow-hidden rounded-card",
         tone === "light"
           ? // A white card on the #f3f3f3 canvas is a 1.06:1 difference, so the
             // shadow alone will not separate them. The border does the work.

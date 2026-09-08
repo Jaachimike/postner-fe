@@ -40,10 +40,10 @@ export default function PostPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
       <Link
         href="/review"
-        className="inline-flex w-fit items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
+        className="inline-flex w-fit shrink-0 items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
       >
         <ArrowLeft className="size-4" aria-hidden />
         Back to queue

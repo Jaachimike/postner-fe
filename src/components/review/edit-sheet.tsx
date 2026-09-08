@@ -6,13 +6,61 @@ import { Undo2, Wand2 } from "lucide-react";
 import { Sheet } from "@/components/ui/sheet";
 import { Button } from "@/components/ui/button";
 import { Field, Input, Select, Textarea } from "@/components/ui/field";
+import { ChipGroup } from "@/components/ui/chip";
 import { Toggle } from "@/components/ui/switch";
 import { ErrorNote } from "@/components/ui/feedback";
 import { cn } from "@/lib/utils/cn";
-import { useVariants } from "@/features/catalog/hooks";
 import { useRedesign, useRevisions, useRewrite, useUndo } from "@/features/posts/hooks";
-import { isPack, type CarouselSlide, type Post } from "@/lib/api/types";
+import {
+  IMAGE_STYLES,
+  asImageStyle,
+  isPack,
+  hasMarkup,
+  packPageFields,
+  type CarouselSlide,
+  type ImageStyle,
+  type Post,
+} from "@/lib/api/types";
 import { toMessage } from "@/lib/api/errors";
+
+type SlideField = Exclude<keyof CarouselSlide, "page_id">;
+
+/**
+ * How each slide field is labelled and typed into.
+ *
+ * Keyed by every editable key on `CarouselSlide`, so it doubles as the runtime
+ * check for which names can actually be saved — see `isSlideField`.
+ */
+const SLIDE_FIELD_META: Record<SlideField, { label: string; kind: "input" | "textarea" }> = {
+  title: { label: "Title", kind: "input" },
+  subtitle: { label: "Subtitle", kind: "input" },
+  body: { label: "Body", kind: "textarea" },
+  body_2: { label: "Body 2", kind: "textarea" },
+  body_emphasis: { label: "Emphasis", kind: "input" },
+  page_number: { label: "Page number", kind: "input" },
+  cta: { label: "Call to action", kind: "input" },
+  brand: { label: "Brand", kind: "input" },
+  series: { label: "Series", kind: "input" },
+  script: { label: "Script", kind: "textarea" },
+  next: { label: "Next teaser", kind: "input" },
+  handle: { label: "Handle", kind: "input" },
+  visual_prompt: { label: "Visual prompt", kind: "textarea" },
+};
+
+function isSlideField(key: string): key is SlideField {
+  return key in SLIDE_FIELD_META;
+}
+
+/**
+ * Inputs to offer when the post has no `pack_pages` to go on.
+ *
+ * The list this screen used to render unconditionally. Posts drafted before
+ * the API started snapshotting the pack schema still land here.
+ */
+const FALLBACK_FIELDS = ["title", "subtitle", "body", "body_2", "cta"];
+
+const MARKUP_MESSAGE =
+  "Remove the HTML tag or javascript: link. The API refuses markup in post copy.";
 
 export function EditSheet({
   post,
@@ -95,6 +143,10 @@ function CopyTab({
   const [caption, setCaption] = React.useState(post.content?.ig_fb_caption ?? "");
   const [overlay, setOverlay] = React.useState(post.content?.overlay_text ?? "");
 
+  /** The one field holding markup the API would refuse, if any. */
+  const [invalidField, setInvalidField] = React.useState<string | null>(null);
+  const errorFor = (key: string) => (invalidField === key ? MARKUP_MESSAGE : undefined);
+
   /**
    * Every slide's copy, not just the selected one.
    *
@@ -121,14 +173,67 @@ function CopyTab({
 
   const slide: CarouselSlide = draft[pageId] ?? { page_id: pageId };
 
+  /**
+   * Which inputs the selected slide gets.
+   *
+   * Driven by that page's own field list, so a pack offers only what its HTML
+   * fills: the `lifestyle_tips` cover takes `script` and `title`, where this
+   * screen used to show Title, Subtitle, Body, Body 2 and CTA on every slide —
+   * three of them writing to `content` and changing nothing on the page, while
+   * `script` could not be edited at all.
+   *
+   * Names outside `CarouselSlide` are dropped rather than rendered. The rewrite
+   * endpoint revalidates each slide through that schema and discards keys it
+   * does not know, so an input for one would look like it saved and silently
+   * not. A pack declaring such a field is not editable here until the slide
+   * schema gains it.
+   */
+  const fields = (packPageFields(post.content, pageId) ?? FALLBACK_FIELDS).filter(
+    isSlideField,
+  );
+
   function setField(key: keyof CarouselSlide, value: string) {
+    setInvalidField(null);
     setDraft((prev) => ({
       ...prev,
       [pageId]: { ...(prev[pageId] ?? { page_id: pageId }), [key]: value },
     }));
   }
 
+  /**
+   * Find the first input the API would reject, so it can be pointed at.
+   *
+   * Slides are checked in pager order and only on the fields actually shown,
+   * so the report lands somewhere the user can see and fix. Returns the slide
+   * to switch to as well, since the offending field is usually not on screen.
+   */
+  function findMarkup(): { key: string; pageId?: string } | null {
+    if (hasMarkup(caption)) return { key: "caption" };
+    if (!pack) return hasMarkup(overlay) ? { key: "overlay" } : null;
+    for (const entry of slides) {
+      const value = draft[entry.page_id] ?? entry;
+      const shown = (packPageFields(post.content, entry.page_id) ?? FALLBACK_FIELDS).filter(
+        isSlideField,
+      );
+      for (const key of shown) {
+        if (hasMarkup(value[key])) return { key, pageId: entry.page_id };
+      }
+    }
+    return null;
+  }
+
   function apply(suggest: boolean) {
+    // Pre-flight the server's markup rule. It would reject this anyway; doing
+    // it here is what lets the message sit on the field instead of arriving as
+    // a sheet-level 422 that names a field but cannot highlight it.
+    const bad = findMarkup();
+    if (bad) {
+      if (bad.pageId) setPageId(bad.pageId);
+      setInvalidField(bad.key);
+      return;
+    }
+    setInvalidField(null);
+
     const text = pack
       ? { slides: slides.map((entry) => draft[entry.page_id] ?? entry) }
       : { overlay_text: overlay };
@@ -145,12 +250,20 @@ function CopyTab({
     <div className="flex flex-col gap-5">
       <ErrorNote message={rewrite.isError ? toMessage(rewrite.error) : null} />
 
-      <Field label="Caption" htmlFor="edit_caption" hint="The Instagram / Facebook caption.">
+      <Field
+        label="Caption"
+        htmlFor="edit_caption"
+        hint="The Instagram / Facebook caption."
+        error={errorFor("caption")}
+      >
         <Textarea
           id="edit_caption"
           rows={4}
           value={caption}
-          onChange={(event) => setCaption(event.target.value)}
+          onChange={(event) => {
+            setInvalidField(null);
+            setCaption(event.target.value);
+          }}
         />
       </Field>
 
@@ -170,17 +283,16 @@ function CopyTab({
             </Select>
           </Field>
 
-          {(
-            [
-              ["title", "Title", "input"],
-              ["subtitle", "Subtitle", "input"],
-              ["body", "Body", "textarea"],
-              ["body_2", "Body 2", "textarea"],
-              ["cta", "Call to action", "input"],
-            ] as const
-          ).map(([key, label, kind]) =>
-            key in slide || kind === "input" ? (
-              <Field key={key} label={label} htmlFor={`edit_${key}`} optional>
+          {fields.map((key) => {
+            const { label, kind } = SLIDE_FIELD_META[key];
+            return (
+              <Field
+                key={key}
+                label={label}
+                htmlFor={`edit_${key}`}
+                optional
+                error={errorFor(key)}
+              >
                 {kind === "textarea" ? (
                   <Textarea
                     id={`edit_${key}`}
@@ -196,16 +308,24 @@ function CopyTab({
                   />
                 )}
               </Field>
-            ) : null,
-          )}
+            );
+          })}
         </>
       ) : (
-        <Field label="Overlay text" htmlFor="edit_overlay" optional>
+        <Field
+          label="Overlay text"
+          htmlFor="edit_overlay"
+          optional
+          error={errorFor("overlay")}
+        >
           <Textarea
             id="edit_overlay"
             rows={3}
             value={overlay}
-            onChange={(event) => setOverlay(event.target.value)}
+            onChange={(event) => {
+              setInvalidField(null);
+              setOverlay(event.target.value);
+            }}
           />
         </Field>
       )}
@@ -231,11 +351,16 @@ function CopyTab({
 function LookTab({ post, onDone }: { post: Post; onDone: () => void }) {
   const redesign = useRedesign(post.id);
   const undo = useUndo(post.id);
-  const variants = useVariants(post.brand_id);
   const revisions = useRevisions(post.id);
 
-  const [variantId, setVariantId] = React.useState(post.variant_id ?? "");
+  const current = asImageStyle(post.image_style);
+  const [imageStyle, setImageStyle] = React.useState<ImageStyle>(current);
   const [regenerateImages, setRegenerateImages] = React.useState(false);
+
+  // Redesign only re-fills the same markup unless something about the art
+  // direction actually moves, so offering the button in that state would spend
+  // a round trip to produce a design identical to the one on screen.
+  const unchanged = imageStyle === current && !regenerateImages;
 
   return (
     <div className="flex flex-col gap-5">
@@ -250,22 +375,18 @@ function LookTab({ post, onDone }: { post: Post; onDone: () => void }) {
       />
 
       <Field
-        label="Colour variant"
-        htmlFor="edit_variant"
-        hint="Palettes are stored per brand. Leave empty and propose a new one instead."
+        label="Photo style"
+        htmlFor="edit_image_style"
+        hint={IMAGE_STYLES.find((style) => style.value === imageStyle)?.hint}
       >
-        <Select
-          id="edit_variant"
-          value={variantId}
-          onChange={(event) => setVariantId(event.target.value)}
-        >
-          <option value="">No change</option>
-          {(variants.data ?? []).map((variant) => (
-            <option key={variant.id} value={variant.id}>
-              {variant.label}
-            </option>
-          ))}
-        </Select>
+        <div id="edit_image_style">
+          <ChipGroup
+            ariaLabel="Photo style"
+            options={IMAGE_STYLES.map(({ value, label }) => ({ value, label }))}
+            value={[imageStyle]}
+            onChange={(next) => setImageStyle(next[0] as ImageStyle)}
+          />
+        </div>
       </Field>
 
       <div className="rounded-xl border border-border bg-bg p-4">
@@ -276,47 +397,36 @@ function LookTab({ post, onDone }: { post: Post; onDone: () => void }) {
           label="Generate new photos"
           hint="Slower and costs a Recraft pass. Off keeps the existing shots."
         />
+        {/* The style is stored on the post but only reaches Recraft when photos
+            are generated, so switching it alone changes what the *next* batch
+            looks like and nothing on screen. Saying so beats letting the button
+            appear to do nothing. */}
+        {imageStyle !== current && !regenerateImages ? (
+          <p className="mt-3 border-t border-border pt-3 text-xs text-ink-subtle">
+            Saved for later. The existing photos keep their current style until
+            you generate new ones.
+          </p>
+        ) : null}
       </div>
 
-      <div className="flex gap-2">
-        <Button
-          variant="secondary"
-          className="flex-1"
-          loading={redesign.isPending}
-          onClick={() =>
-            redesign.mutate(
-              {
-                variant_id: null,
-                propose: true,
-                regenerate_images: regenerateImages,
-                recompose: true,
-              },
-              { onSuccess: onDone },
-            )
-          }
-        >
-          <Wand2 className="size-4" aria-hidden />
-          Propose palette
-        </Button>
-        <Button
-          className="flex-1"
-          disabled={!variantId}
-          loading={redesign.isPending}
-          onClick={() =>
-            redesign.mutate(
-              {
-                variant_id: variantId,
-                propose: false,
-                regenerate_images: regenerateImages,
-                recompose: true,
-              },
-              { onSuccess: onDone },
-            )
-          }
-        >
-          Apply look
-        </Button>
-      </div>
+      <Button
+        className="w-full"
+        disabled={unchanged}
+        loading={redesign.isPending}
+        onClick={() =>
+          redesign.mutate(
+            {
+              image_style: imageStyle,
+              regenerate_images: regenerateImages,
+              recompose: true,
+            },
+            { onSuccess: onDone },
+          )
+        }
+      >
+        <Wand2 className="size-4" aria-hidden />
+        Apply look
+      </Button>
 
       <div className="flex items-center justify-between gap-3 border-t border-border pt-4">
         <p className="text-xs text-ink-subtle">

@@ -17,7 +17,10 @@ export function TikTokChrome({ post, identity, caption, media, hasDesign }: Post
       ariaLabel={`${formatLabel(post.format)} preview for ${identity.displayName}`}
       className="bg-black text-white"
     >
-      <div className="relative">
+      {/* `flex-1 min-h-0` so the full-bleed media shrinks with the card
+          on a short screen; the absolute overlays below still anchor to
+          this box. */}
+      <div className="relative flex min-h-0 flex-1">
         {media}
 
         {/* Suppressed without a design, so the rail does not sit on top of the

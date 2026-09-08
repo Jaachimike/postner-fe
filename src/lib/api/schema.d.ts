@@ -55,40 +55,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/variants": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Variants */
-        get: operations["variants_variants_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/variants/propose": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Variants Propose */
-        post: operations["variants_propose_variants_propose_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/packs/propose": {
         parameters: {
             query?: never;
@@ -100,7 +66,7 @@ export interface paths {
         put?: never;
         /**
          * Packs Propose
-         * @description Propose multi-page packs from the existing page catalog; optionally pair with variants.
+         * @description Propose multi-page packs from the existing page catalog.
          */
         post: operations["packs_propose_packs_propose_post"];
         delete?: never;
@@ -229,26 +195,6 @@ export interface paths {
         };
         /** Get Post */
         get: operations["get_post_posts__post_id__get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
-    "/posts/{post_id}/pages/{page_id}/html": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /**
-         * Get Page Preview Html
-         * @description Browser-ready filled HTML for iframe / srcdoc (images inlined as data URIs).
-         */
-        get: operations["get_page_preview_html_posts__post_id__pages__page_id__html_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -519,8 +465,8 @@ export interface components {
             template_id?: string | null;
             /** Format */
             format?: ("ig_feed" | "ig_portrait" | "ig_story" | "tiktok" | "fb_post" | "x_post") | null;
-            /** Variant Id */
-            variant_id?: string | null;
+            /** Image Style */
+            image_style?: ("realistic" | "illustration" | "graphics") | null;
             /**
              * With Images
              * @default false
@@ -606,11 +552,6 @@ export interface components {
             /** Revisions */
             revisions: components["schemas"]["RevisionItem"][];
         };
-        /** ListVariantsResponse */
-        ListVariantsResponse: {
-            /** Variants */
-            variants: components["schemas"]["VariantOut"][];
-        };
         /** LoginRequest */
         LoginRequest: {
             /**
@@ -645,6 +586,8 @@ export interface components {
              * @enum {string}
              */
             format: "ig_feed" | "ig_portrait" | "ig_story" | "tiktok" | "fb_post" | "x_post";
+            /** Formats */
+            formats: ("ig_feed" | "ig_portrait" | "ig_story" | "tiktok" | "fb_post" | "x_post")[];
             /** Pages */
             pages: number;
             /** Images */
@@ -688,10 +631,8 @@ export interface components {
             pack_id: string | null;
             /** Template Id */
             template_id: string | null;
-            /** Variant Id */
-            variant_id: string | null;
-            /** Asset Dir */
-            asset_dir: string;
+            /** Image Style */
+            image_style: string;
             /** Content */
             content: {
                 [key: string]: unknown;
@@ -729,16 +670,6 @@ export interface components {
              */
             count: number;
             /**
-             * With Variants
-             * @default true
-             */
-            with_variants: boolean;
-            /**
-             * Variant Count
-             * @default 3
-             */
-            variant_count: number;
-            /**
              * Brief
              * @default
              */
@@ -752,45 +683,11 @@ export interface components {
             }[];
             /** Saved Pack Ids */
             saved_pack_ids: string[];
-            /** Variants */
-            variants?: {
-                [key: string]: unknown;
-            }[];
-            /** Saved Variant Ids */
-            saved_variant_ids?: string[];
-        };
-        /** ProposeVariantsRequest */
-        ProposeVariantsRequest: {
-            /** Brand Id */
-            brand_id: string;
-            /** Template Id */
-            template_id?: string | null;
-            /** Pack Id */
-            pack_id?: string | null;
-            /**
-             * Count
-             * @default 3
-             */
-            count: number;
-        };
-        /** ProposeVariantsResponse */
-        ProposeVariantsResponse: {
-            /** Variants */
-            variants: {
-                [key: string]: unknown;
-            }[];
-            /** Saved Ids */
-            saved_ids: string[];
         };
         /** RedesignRequest */
         RedesignRequest: {
-            /** Variant Id */
-            variant_id?: string | null;
-            /**
-             * Propose
-             * @default false
-             */
-            propose: boolean;
+            /** Image Style */
+            image_style?: ("realistic" | "illustration" | "graphics") | null;
             /**
              * Regenerate Images
              * @default false
@@ -889,21 +786,6 @@ export interface components {
             /** Context */
             ctx?: Record<string, never>;
         };
-        /** VariantOut */
-        VariantOut: {
-            /** Id */
-            id: string;
-            /** Slug */
-            slug: string;
-            /** Label */
-            label: string;
-            /** Css Vars */
-            css_vars: {
-                [key: string]: unknown;
-            };
-            /** Brand Id */
-            brand_id: string;
-        };
     };
     responses: never;
     parameters: never;
@@ -969,71 +851,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListPacksResponse"];
-                };
-            };
-        };
-    };
-    variants_variants_get: {
-        parameters: {
-            query: {
-                /** @description Brand UUID or slug */
-                brand_id: string;
-            };
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListVariantsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    variants_propose_variants_propose_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ProposeVariantsRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ProposeVariantsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -1358,38 +1175,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PostResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_page_preview_html_posts__post_id__pages__page_id__html_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path: {
-                post_id: string;
-                page_id: string;
-            };
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "text/html": string;
                 };
             };
             /** @description Validation Error */
