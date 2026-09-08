@@ -23,21 +23,27 @@ import { cn } from "@/lib/utils/cn";
  */
 export function FitBox({
   aspect,
+  minHeight = "12rem",
   className,
   children,
 }: {
   /** Width / height of the box to fit. */
   aspect: number;
+  /**
+   * Floor below which the box stops shrinking and the page scrolls instead.
+   *
+   * The floor matters as much as the ceiling. Without one the design shrinks
+   * without limit, and on a short laptop with a long caption it reaches ~140px
+   * wide — technically on one screen, useless to review. Overflowing and
+   * letting `main` scroll is the lesser failure. Lower it for a box that is
+   * decorative rather than something the user has to read.
+   */
+  minHeight?: string;
   className?: string;
   children: React.ReactNode;
 }) {
   return (
-    // The floor matters as much as the ceiling. Pure `min-h-0` shrinks the
-    // design without limit, and on a short laptop with a long caption that
-    // reaches ~140px wide — technically on one screen, useless to review. At
-    // this floor the card would rather overflow and let `main` scroll, which is
-    // the lesser failure of the two.
-    <div className="min-h-[12rem] flex-1 [container-type:size]">
+    <div className="flex-1 [container-type:size]" style={{ minHeight }}>
       <div
         className={cn("mx-auto", className)}
         style={{

@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Generating } from "@/components/post/generating";
+import { FitBox } from "@/components/post/media-frame";
 import { ReviewSurface } from "@/components/review/review-surface";
 import { ErrorNote, Skeleton } from "@/components/ui/feedback";
 import { usePost } from "@/features/posts/hooks";
@@ -19,8 +20,10 @@ export default function PostPage() {
 
   if (post.isPending) {
     return (
-      <div className="mx-auto w-full max-w-[34rem]">
-        <Skeleton className="aspect-[3/4] w-full rounded-card" />
+      <div className="mx-auto flex min-h-0 w-full max-w-[34rem] flex-1 flex-col">
+        <FitBox aspect={3 / 4} minHeight="3rem">
+          <Skeleton className="size-full rounded-card" />
+        </FitBox>
       </div>
     );
   }
