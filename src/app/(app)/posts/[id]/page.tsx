@@ -11,6 +11,7 @@ import { ErrorNote, Skeleton } from "@/components/ui/feedback";
 import { usePost } from "@/features/posts/hooks";
 import { usePostPipeline } from "@/features/posts/use-pipeline";
 import { toMessage } from "@/lib/api/errors";
+import { isApproved } from "@/lib/api/types";
 
 export default function PostPage() {
   const postId = String(useParams().id ?? "");
@@ -44,12 +45,15 @@ export default function PostPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
+      {/* Points at the list this post belongs to, not the queue. Tiles on
+          /drafts and /approved both land here, so "back to queue" was a lie in
+          the two cases that now bring most people to this page. */}
       <Link
-        href="/review"
+        href={isApproved(post.data) ? "/approved" : "/drafts"}
         className="inline-flex w-fit shrink-0 items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
       >
         <ArrowLeft className="size-4" aria-hidden />
-        Back to queue
+        {isApproved(post.data) ? "Back to approved" : "Back to drafts"}
       </Link>
 
       <ReviewSurface post={post.data} onAdvance={() => router.push("/review")} />

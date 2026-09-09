@@ -206,6 +206,16 @@ export function isReviewable(post: Post): boolean {
   return REVIEWABLE_STATUSES.includes(post.status);
 }
 
+/**
+ * The post came out the other end of review.
+ *
+ * Approving is what triggers the render server-side, so an approved post is
+ * also the only kind that reliably has files behind it.
+ */
+export function isApproved(post: Post): boolean {
+  return post.status === "approved";
+}
+
 export function composedPages(post: Post): ComposedPage[] {
   return [...(post.composed?.pages ?? [])].sort((a, b) => a.index - b.index);
 }

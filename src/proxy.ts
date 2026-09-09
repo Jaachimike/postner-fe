@@ -23,7 +23,7 @@ export function proxy(request: NextRequest) {
 
   if (hasSession && isPublic) {
     const url = request.nextUrl.clone();
-    url.pathname = "/review";
+    url.pathname = "/drafts";
     url.search = "";
     return NextResponse.redirect(url);
   }

@@ -3,6 +3,7 @@
 import * as React from "react";
 import Link from "next/link";
 import { Pencil, Plus } from "lucide-react";
+import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { EmptyState, Skeleton, ErrorNote } from "@/components/ui/feedback";
@@ -18,19 +19,17 @@ export default function BrandsPage() {
   const [editing, setEditing] = React.useState<Brand | null>(null);
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="flex items-end justify-between gap-4">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-ink">Brands</h1>
-          <p className="mt-1 text-sm text-ink-muted">
-            Every post is drafted and designed against one brand.
-          </p>
-        </div>
-        <Button onClick={() => setCreating(true)}>
-          <Plus className="size-4" aria-hidden />
-          New brand
-        </Button>
-      </div>
+    <div className="flex flex-col">
+      <PageHeader
+        title="Brands"
+        description="Every post is drafted and designed against one brand."
+        action={
+          <Button onClick={() => setCreating(true)}>
+            <Plus className="size-4" aria-hidden />
+            New brand
+          </Button>
+        }
+      />
 
       {brands.isPending ? (
         <div className="grid gap-3 sm:grid-cols-2">

@@ -17,7 +17,7 @@ import {
 } from "@/features/auth/schema";
 
 export function LoginForm() {
-  const next = useSearchParams().get("next") ?? "/review";
+  const next = useSearchParams().get("next") ?? "/drafts";
   const login = useLogin(next);
   const {
     register,
