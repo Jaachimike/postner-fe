@@ -17,9 +17,9 @@ import { formatLabel, isImmersive } from "@/lib/formats";
  * then the caption *below* prefixed by the username — Instagram's ordering, and
  * the opposite of X's.
  *
- * A story is immersive: black, full-bleed, chrome floating over the media. Its
- * phone-width cap lives on `PostCard`, not here, so the meta line under the
- * card stays aligned with it.
+ * A story is immersive: full-bleed media with chrome floating over it, and no
+ * feed caption. Its phone-width cap lives on `PostCard`, not here, so the meta
+ * line under the card stays aligned with it.
  */
 export function IgChrome(props: PostChromeProps) {
   return isImmersive(props.post.format) ? <IgStory {...props} /> : <IgFeed {...props} />;
@@ -65,18 +65,18 @@ function IgFeed({ post, identity, caption, media }: PostChromeProps) {
   );
 }
 
-function IgStory({ post, identity, caption, media, hasDesign }: PostChromeProps) {
+function IgStory({ post, identity, media, hasDesign }: PostChromeProps) {
   return (
     <CardShell
       tone="dark"
       ariaLabel={`${formatLabel(post.format)} preview for ${identity.displayName}`}
-      className="bg-black text-white"
+      // `flex-none` + aspect box: do not stretch the shell taller than the
+      // 9:16 media. Stretching left a black letterbox under the design, and
+      // the old caption overlay sat on that dead space.
+      className="w-full flex-none text-white"
     >
-      {/* `flex-1 min-h-0` so the full-bleed media shrinks with the card
-          on a short screen; the absolute overlays below still anchor to
-          this box. */}
-      <div className="relative flex min-h-0 flex-1">
-        {media}
+      <div className="relative w-full" style={{ aspectRatio: "9 / 16" }}>
+        <div className="absolute inset-0 flex min-h-0 flex-col">{media}</div>
 
         {/* The pager's segmented bars are drawn by the carousel at the top, so
             the identity row sits just under them. */}
@@ -93,27 +93,18 @@ function IgStory({ post, identity, caption, media, hasDesign }: PostChromeProps)
           </p>
         </header>
 
-        {/* With no design to show, the frame is holding an explanation of why.
-            Overlaying decoration on top of it would bury the one thing worth
-            reading. */}
+        {/* Stories publish without a feed caption — only the on-design copy.
+            Keep the Send-message chrome; skip the caption overlay. */}
         {hasDesign ? (
-          <>
-            {caption ? (
-              <p className="pointer-events-none absolute inset-x-3 bottom-14 whitespace-pre-wrap text-sm leading-snug drop-shadow">
-                {caption}
-              </p>
-            ) : null}
-
-            <div className="pointer-events-none absolute inset-x-3 bottom-3 flex items-center gap-3">
-              <span
-                aria-hidden
-                className="min-w-0 flex-1 truncate rounded-full border border-white/40 px-3 py-1.5 text-xs text-white/70"
-              >
-                Send message
-              </span>
-              <GlyphRow items={[{ icon: Send }, { icon: Bookmark }]} className="gap-3" />
-            </div>
-          </>
+          <div className="pointer-events-none absolute inset-x-3 bottom-3 flex items-center gap-3">
+            <span
+              aria-hidden
+              className="min-w-0 flex-1 truncate rounded-full border border-white/40 px-3 py-1.5 text-xs text-white/70"
+            >
+              Send message
+            </span>
+            <GlyphRow items={[{ icon: Send }, { icon: Bookmark }]} className="gap-3" />
+          </div>
         ) : null}
       </div>
     </CardShell>

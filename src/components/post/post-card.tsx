@@ -8,12 +8,10 @@ import { chromeMedia } from "@/components/post/chrome/meta";
 import { FitBox, MediaFrame } from "@/components/post/media-frame";
 import { PostCarousel } from "@/components/post/post-carousel";
 import {
-  findSlide,
   needsRecompose,
   postCaption,
   postHandle,
   previewPages,
-  slideCaption,
   type Post,
 } from "@/lib/api/types";
 import { aspectRatio, formatLabel, isImmersive } from "@/lib/formats";
@@ -70,14 +68,10 @@ export function PostCard({
   const hasDesign = !stale && pages.length > 0;
   const media = chromeMedia(post.format);
 
-  // An immersive chrome floats one caption over the media and has no room for
-  // the carousel's own copy line, so for those formats the slide's copy becomes
-  // the overlay — which is the more useful of the two when reviewing a pack.
-  const slide = slideCaption(findSlide(post.content?.slides, pages[index]?.page_id ?? ""));
-  const caption =
-    isImmersive(post.format) && slide
-      ? [slide.title, slide.body].filter(Boolean).join(" ")
-      : postCaption(post);
+  // Always the publish caption (`ig_fb_caption`), including immersive formats.
+  // Slide title/body is already painted into the design HTML — overlaying it
+  // again in the chrome duplicated the on-slide copy and hid the real caption.
+  const caption = postCaption(post);
 
   const displayName = brand?.name ?? post.content?.brand ?? "Your brand";
   const identity = {
@@ -91,12 +85,12 @@ export function PostCard({
     <div
       className={cn(
         "flex min-h-0 flex-1 flex-col gap-3",
-        // A 9:16 frame at the review column's full width would stand nearly a
-        // thousand pixels tall. The height chain now shrinks it to fit anyway,
-        // but the cap is still what stops a story rendering as a wide, short
-        // sliver on a big screen. Capping here rather than in the chrome keeps
-        // the meta line under the card aligned with it.
-        isImmersive(post.format) && "mx-auto w-full max-w-[20rem]",
+        // Immersive formats are phone-shaped; cap width so they don't become
+        // short wide slabs. Stories get a wider phone than TikTok — more room
+        // to read the design without changing feed/card formats.
+        post.format === "ig_story"
+          ? "mx-auto w-full max-w-[24rem]"
+          : isImmersive(post.format) && "mx-auto w-full max-w-[20rem]",
         className,
       )}
     >

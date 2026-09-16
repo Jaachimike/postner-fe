@@ -21,7 +21,7 @@ import { platformOf, type Platform } from "@/lib/formats";
  * | avatar     | 32px, gradient ring   | 32px, ring  | 40px plain         | 40px plain            | rail + "+" badge  |
  * | name       | username              | username    | full name          | name and @handle      | @handle           |
  * | tick       | ig-accent             | ig-accent   | fb-accent          | x-accent              | none              |
- * | caption    | below media           | overlaid    | above media        | above media           | overlaid          |
+ * | caption    | below media           | none        | above media        | above media           | overlaid          |
  * | glyphs     | heart/comment/send    | send/save   | Like/Comment/Share | reply/repost/like/... | vertical rail     |
  * | media      | full-bleed            | full-bleed  | full-bleed         | inset + border        | full-bleed        |
  *

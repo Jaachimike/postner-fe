@@ -1,11 +1,13 @@
 "use client";
 
+import * as React from "react";
 import { Controller, useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Field, Input, Textarea } from "@/components/ui/field";
 import { Button } from "@/components/ui/button";
 import { ChipGroup } from "@/components/ui/chip";
 import { ErrorNote } from "@/components/ui/feedback";
+import { LogoUpload, type LogoUploadState } from "@/components/brand/logo-upload";
 import { FORMAT_META, POST_FORMATS, type PostFormat } from "@/lib/formats";
 import { brandSchema, type BrandValues } from "@/features/brands/schema";
 import { toMessage } from "@/lib/api/errors";
@@ -16,6 +18,8 @@ const FORMAT_OPTIONS = POST_FORMATS.map((value) => ({
   label: FORMAT_META[value].label,
 }));
 
+export type BrandFormSubmit = BrandValues & LogoUploadState;
+
 export function BrandForm({
   brand,
   onSubmit,
@@ -24,11 +28,14 @@ export function BrandForm({
   submitLabel = "Save brand",
 }: {
   brand?: Brand;
-  onSubmit: (values: BrandValues) => void;
+  onSubmit: (values: BrandFormSubmit) => void | Promise<void>;
   pending: boolean;
   error?: unknown;
   submitLabel?: string;
 }) {
+  const [logoFile, setLogoFile] = React.useState<File | null>(null);
+  const [removeLogo, setRemoveLogo] = React.useState(false);
+
   const {
     register,
     control,
@@ -41,13 +48,18 @@ export function BrandForm({
       tagline: brand?.tagline ?? "",
       description: brand?.description ?? "",
       website: brand?.website ?? "",
-      logo: brand?.logo ?? "",
       formats: (brand?.formats as PostFormat[] | undefined) ?? ["ig_feed"],
     },
   });
 
   return (
-    <form className="flex flex-col gap-5" onSubmit={handleSubmit(onSubmit)} noValidate>
+    <form
+      className="flex flex-col gap-5"
+      onSubmit={handleSubmit((values) =>
+        onSubmit({ ...values, file: logoFile, removeLogo }),
+      )}
+      noValidate
+    >
       <ErrorNote message={error ? toMessage(error) : null} />
 
       <Field label="Brand name" htmlFor="brand_name" error={errors.name?.message}>
@@ -87,8 +99,23 @@ export function BrandForm({
         />
       </Field>
 
-      <Field label="Logo URL" htmlFor="brand_logo" optional hint="A public image URL or storage key.">
-        <Input id="brand_logo" placeholder="https://…/logo.svg" {...register("logo")} />
+      <Field
+        label="Logo"
+        htmlFor="brand_logo"
+        optional
+        hint="Square-ish PNG, JPEG, or WebP. Stored on your brand profile for post chrome."
+      >
+        <LogoUpload
+          currentLogoUrl={brand?.logo}
+          file={logoFile}
+          removeLogo={removeLogo}
+          disabled={pending}
+          onFileChange={(file) => {
+            setLogoFile(file);
+            if (file) setRemoveLogo(false);
+          }}
+          onRemoveLogo={() => setRemoveLogo(true)}
+        />
       </Field>
 
       <Controller

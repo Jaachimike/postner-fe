@@ -57,24 +57,9 @@ function IllustratedScene() {
   );
 }
 
-function GraphicScene() {
-  return (
-    <svg viewBox="0 0 64 48" className="size-full" aria-hidden>
-      <rect width="64" height="48" fill="currentColor" opacity="0.06" />
-      <g fill="currentColor">
-        <rect x="12" y="28" width="7" height="12" opacity="0.35" />
-        <rect x="23" y="21" width="7" height="19" opacity="0.5" />
-        <rect x="34" y="14" width="7" height="26" opacity="0.65" />
-        <rect x="45" y="8" width="7" height="32" opacity="0.85" />
-      </g>
-    </svg>
-  );
-}
-
 const SCENES: Record<ImageStyle, () => React.ReactElement> = {
   realistic: PhotographicScene,
   illustration: IllustratedScene,
-  graphics: GraphicScene,
 };
 
 /**

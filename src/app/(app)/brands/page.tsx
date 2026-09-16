@@ -7,8 +7,13 @@ import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
 import { EmptyState, Skeleton, ErrorNote } from "@/components/ui/feedback";
-import { BrandForm } from "@/components/brand/brand-form";
-import { useBrands, useCreateBrand, useUpdateBrand } from "@/features/brands/hooks";
+import { BrandForm, type BrandFormSubmit } from "@/components/brand/brand-form";
+import {
+  useBrands,
+  useCreateBrand,
+  useUpdateBrand,
+  useUploadBrandLogo,
+} from "@/features/brands/hooks";
 import { FORMAT_META, type PostFormat } from "@/lib/formats";
 import { toMessage } from "@/lib/api/errors";
 import type { Brand } from "@/lib/api/types";
@@ -52,11 +57,23 @@ export default function BrandsPage() {
               className="group flex flex-col gap-3 rounded-2xl border border-border bg-surface p-5 transition-colors hover:border-ink/20"
             >
               <div className="flex items-start justify-between gap-3">
-                <div className="min-w-0">
-                  <h2 className="truncate font-semibold text-ink">{brand.name}</h2>
-                  {brand.tagline ? (
-                    <p className="mt-0.5 truncate text-sm text-ink-muted">{brand.tagline}</p>
+                <div className="flex min-w-0 items-start gap-3">
+                  {brand.logo ? (
+                    <div className="size-10 shrink-0 overflow-hidden rounded-lg border border-border bg-surface">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img
+                        src={brand.logo}
+                        alt=""
+                        className="size-full object-cover"
+                      />
+                    </div>
                   ) : null}
+                  <div className="min-w-0">
+                    <h2 className="truncate font-semibold text-ink">{brand.name}</h2>
+                    {brand.tagline ? (
+                      <p className="mt-0.5 truncate text-sm text-ink-muted">{brand.tagline}</p>
+                    ) : null}
+                  </div>
                 </div>
                 <button
                   type="button"
@@ -101,6 +118,16 @@ export default function BrandsPage() {
   );
 }
 
+function brandBody(values: BrandFormSubmit) {
+  return {
+    name: values.name,
+    tagline: values.tagline ?? "",
+    description: values.description ?? "",
+    website: values.website,
+    formats: values.formats,
+  };
+}
+
 function CreateBrandSheet({
   open,
   onOpenChange,
@@ -109,26 +136,34 @@ function CreateBrandSheet({
   onOpenChange: (open: boolean) => void;
 }) {
   const create = useCreateBrand();
+  const uploadLogo = useUploadBrandLogo();
+  const pending = create.isPending || uploadLogo.isPending;
+  const error = create.error ?? uploadLogo.error;
+
   return (
     <Sheet
       open={open}
       onOpenChange={(next) => {
-        if (!next) create.reset();
+        if (!next) {
+          create.reset();
+          uploadLogo.reset();
+        }
         onOpenChange(next);
       }}
       title="New brand"
       description="Starter colour palettes are seeded automatically."
     >
       <BrandForm
-        pending={create.isPending}
-        error={create.isError ? create.error : undefined}
+        pending={pending}
+        error={error}
         submitLabel="Create brand"
-        onSubmit={(values) =>
-          create.mutate(
-            { ...values, tagline: values.tagline ?? "", description: values.description ?? "" },
-            { onSuccess: () => onOpenChange(false) },
-          )
-        }
+        onSubmit={async (values) => {
+          const brand = await create.mutateAsync(brandBody(values));
+          if (values.file) {
+            await uploadLogo.mutateAsync({ brandId: brand.id, file: values.file });
+          }
+          onOpenChange(false);
+        }}
       />
     </Sheet>
   );
@@ -141,13 +176,28 @@ function EditBrandSheet({ brand, onClose }: { brand: Brand | null; onClose: () =
 
 function EditBrandSheetInner({ brand, onClose }: { brand: Brand; onClose: () => void }) {
   const update = useUpdateBrand(brand.id);
+  const uploadLogo = useUploadBrandLogo();
+  const pending = update.isPending || uploadLogo.isPending;
+  const error = update.error ?? uploadLogo.error;
+
   return (
     <Sheet open onOpenChange={(next) => !next && onClose()} title={`Edit ${brand.name}`}>
       <BrandForm
         brand={brand}
-        pending={update.isPending}
-        error={update.isError ? update.error : undefined}
-        onSubmit={(values) => update.mutate(values, { onSuccess: onClose })}
+        pending={pending}
+        error={error}
+        onSubmit={async (values) => {
+          const body = brandBody(values);
+          if (values.removeLogo) {
+            await update.mutateAsync({ ...body, logo: "" });
+          } else {
+            await update.mutateAsync(body);
+          }
+          if (values.file) {
+            await uploadLogo.mutateAsync({ brandId: brand.id, file: values.file });
+          }
+          onClose();
+        }}
       />
     </Sheet>
   );

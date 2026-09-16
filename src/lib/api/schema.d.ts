@@ -162,6 +162,23 @@ export interface paths {
         patch: operations["patch_brand_brands__brand_id__patch"];
         trace?: never;
     };
+    "/brands/{brand_id}/logo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Upload Brand Logo */
+        post: operations["upload_brand_logo_brands__brand_id__logo_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/posts": {
         parameters: {
             query?: never;
@@ -392,6 +409,14 @@ export interface components {
              */
             motion_preset: string;
         };
+        /** Body_upload_brand_logo_brands__brand_id__logo_post */
+        Body_upload_brand_logo_brands__brand_id__logo_post: {
+            /**
+             * File
+             * Format: binary
+             */
+            file: string;
+        };
         /** BrandOut */
         BrandOut: {
             /** Id */
@@ -466,7 +491,7 @@ export interface components {
             /** Format */
             format?: ("ig_feed" | "ig_portrait" | "ig_story" | "tiktok" | "fb_post" | "x_post") | null;
             /** Image Style */
-            image_style?: ("realistic" | "illustration" | "graphics") | null;
+            image_style?: ("realistic" | "illustration") | null;
             /**
              * With Images
              * @default false
@@ -687,7 +712,7 @@ export interface components {
         /** RedesignRequest */
         RedesignRequest: {
             /** Image Style */
-            image_style?: ("realistic" | "illustration" | "graphics") | null;
+            image_style?: ("realistic" | "illustration") | null;
             /**
              * Regenerate Images
              * @default false
@@ -781,10 +806,6 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
-            /** Input */
-            input?: unknown;
-            /** Context */
-            ctx?: Record<string, never>;
         };
     };
     responses: never;
@@ -1070,6 +1091,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["PatchBrandBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BrandOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    upload_brand_logo_brands__brand_id__logo_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_upload_brand_logo_brands__brand_id__logo_post"];
             };
         };
         responses: {
