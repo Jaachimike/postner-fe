@@ -586,6 +586,8 @@ export interface components {
              * @enum {string}
              */
             format: "ig_feed" | "ig_portrait" | "ig_story" | "tiktok" | "fb_post" | "x_post";
+            /** Formats */
+            formats: ("ig_feed" | "ig_portrait" | "ig_story" | "tiktok" | "fb_post" | "x_post")[];
             /** Pages */
             pages: number;
             /** Images */

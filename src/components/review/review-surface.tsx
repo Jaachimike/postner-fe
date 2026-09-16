@@ -65,11 +65,16 @@ export function ReviewSurface({
   }
 
   return (
-    <div className="flex flex-col items-center gap-6">
-      <div className="w-full max-w-[34rem]">
+    // Fits the screen instead of running past it. Everything but the card is
+    // `shrink-0`, so the design is what gives way on a short viewport — and
+    // the FABs, the whole point of this screen, stay reachable without a
+    // scroll. `min-h-0` at each level is what lets the shrinking reach the
+    // media: without it a flex child refuses to go below its content height.
+    <div className="flex min-h-0 flex-1 flex-col items-center gap-4">
+      <div className="flex w-full min-h-0 max-w-[34rem] flex-1 flex-col">
         <ErrorNote
           message={feedback.isError ? toMessage(feedback.error) : null}
-          className="mb-4"
+          className="mb-4 shrink-0"
         />
 
         <AnimatePresence mode="wait" initial={false}>
@@ -79,6 +84,7 @@ export function ReviewSurface({
             animate={{ opacity: 1, y: 0 }}
             exit={reduceMotion ? { opacity: 0 } : { opacity: 0, y: -12 }}
             transition={{ duration: 0.22, ease: [0.22, 1, 0.36, 1] }}
+            className="flex min-h-0 flex-1 flex-col"
           >
             <PostCard
               post={post}

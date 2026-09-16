@@ -1,6 +1,7 @@
 "use client";
 
 import * as React from "react";
+import { ChevronDown } from "lucide-react";
 import { cn } from "@/lib/utils/cn";
 
 export function Field({
@@ -61,11 +62,42 @@ export function Textarea({ className, ...props }: React.ComponentProps<"textarea
   );
 }
 
-export function Select({ className, ...props }: React.ComponentProps<"select">) {
+/**
+ * `control` — the boxed field used inside a `Field`.
+ * `bare` — no border or fill, sized to its content and right-aligned. For a
+ *   settings row that reads as a sentence rather than a form, where a full-width
+ *   box would be the loudest thing on a line that is meant to be quiet.
+ *
+ * The chevron is drawn here rather than left to the platform: `appearance-none`
+ * removes the native one, and every caller reserved space for a replacement
+ * that nothing was rendering.
+ */
+export function Select({
+  className,
+  variant = "control",
+  ...props
+}: React.ComponentProps<"select"> & { variant?: "control" | "bare" }) {
+  const bare = variant === "bare";
   return (
-    <select
-      className={cn(baseControl, "h-11 cursor-pointer appearance-none pr-9", className)}
-      {...props}
-    />
+    <div className={cn("relative", bare ? "inline-flex" : "block")}>
+      <select
+        className={cn(
+          "cursor-pointer appearance-none outline-none transition-colors",
+          "disabled:cursor-not-allowed disabled:opacity-60",
+          bare
+            ? "max-w-48 truncate rounded-lg bg-transparent py-1 pl-2 pr-7 text-right text-sm font-medium text-ink hover:bg-ink/5"
+            : cn(baseControl, "h-11 pr-9"),
+          className,
+        )}
+        {...props}
+      />
+      <ChevronDown
+        aria-hidden
+        className={cn(
+          "pointer-events-none absolute top-1/2 -translate-y-1/2 text-ink-subtle",
+          bare ? "right-1.5 size-3.5" : "right-3.5 size-4",
+        )}
+      />
+    </div>
   );
 }

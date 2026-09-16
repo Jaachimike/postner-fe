@@ -48,16 +48,44 @@ export function EmptyState({
   title,
   body,
   action,
+  icon: Icon,
+  variant = "boxed",
 }: {
   title: string;
   body: string;
   action?: React.ReactNode;
+  /** Optional mark above the title. Sized and coloured here, not by the caller. */
+  icon?: React.ComponentType<{ className?: string }>;
+  /**
+   * `boxed` — a dashed card sitting in the flow of a page that has other
+   * content. `bare` — the whole screen has nothing on it, so the message
+   * centres in the space instead of drawing a container around itself.
+   */
+  variant?: "boxed" | "bare";
 }) {
+  const bare = variant === "bare";
   return (
-    <div className="flex flex-col items-center gap-3 rounded-2xl border border-dashed border-border bg-surface/60 px-6 py-12 text-center">
-      <h2 className="text-base font-semibold text-ink">{title}</h2>
+    <div
+      className={cn(
+        "flex flex-col items-center gap-3 text-center",
+        bare
+          ? "min-h-0 flex-1 justify-center px-6 py-16"
+          : "rounded-2xl border border-dashed border-border bg-surface/60 px-6 py-12",
+      )}
+    >
+      {Icon ? (
+        <Icon className={cn("text-ink-subtle", bare ? "size-10" : "size-6")} />
+      ) : null}
+      <h2
+        className={cn(
+          "font-semibold text-ink",
+          bare ? "text-lg" : "text-base",
+        )}
+      >
+        {title}
+      </h2>
       <p className="max-w-sm text-sm text-ink-muted">{body}</p>
-      {action ? <div className="pt-1">{action}</div> : null}
+      {action ? <div className="flex flex-wrap justify-center gap-2 pt-1">{action}</div> : null}
     </div>
   );
 }

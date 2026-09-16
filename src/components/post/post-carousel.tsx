@@ -4,13 +4,10 @@ import * as React from "react";
 import { motion, useReducedMotion, type PanInfo } from "motion/react";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { HtmlPreview } from "@/components/ui/html-preview";
-import { MediaFrame } from "@/components/post/media-frame";
+import { FitBox, MediaFrame } from "@/components/post/media-frame";
 import {
-  findSlide,
   pageDimensions,
   pagePreviewHtml,
-  slideCaption,
-  type CarouselSlide,
   type ComposedPage,
 } from "@/lib/api/types";
 import { aspectRatio, formatLabel, type PostFormat } from "@/lib/formats";
@@ -28,8 +25,6 @@ export type PagerVariant = "dots" | "bars";
 export interface PostCarouselProps {
   /** Renderable pages, in order. Pass `previewPages(post)`. */
   pages: ComposedPage[];
-  /** Per-slide copy. Joined to pages by `page_id`, never by position. */
-  slides?: CarouselSlide[];
   /** Frame aspect and the accessible label. */
   format: PostFormat;
   index: number;
@@ -56,16 +51,16 @@ const SPRING = { type: "spring", stiffness: 420, damping: 42, mass: 0.9 } as con
  *
  *  1. This file names no palette token. Controls are drawn in `bg-current/...`,
  *     against two different inherited colours: anything *inside* the frame
- *     overlays the black letterbox, so the frame fixes `text-white`; anything
- *     below it (the dots, the slide's copy) sits on the card and inherits the
- *     chrome's own ink. Colouring the whole component one way puts white dots
- *     on a white Instagram card.
+ *     overlays the black letterbox, so the frame fixes `text-white`; the dots
+ *     below it sit on the card and inherit the chrome's own ink. Colouring the
+ *     whole component one way puts white dots on a white Instagram card.
  *  2. The frame's surface and radius arrive as `frameClassName`. Do not wrap
  *     this in a second `overflow-hidden` with a different radius, or the
  *     overlaid arrows get clipped twice.
  *  3. The carousel owns the frame's aspect ratio. It has to: `pageDimensions`
- *     reads each design's canvas out of its own markup, so slides can disagree,
- *     and only the component that sees every slide can keep the box still.
+ *     resolves each design's canvas per page — from the API, or out of the
+ *     markup for older posts — so slides can disagree, and only the component
+ *     that sees every slide can keep the box still.
  *
  * Slides all stay mounted and the track translates, rather than swapping one
  * slide with `AnimatePresence`. Two reasons: during a drag there would
@@ -77,7 +72,6 @@ const SPRING = { type: "spring", stiffness: 420, damping: 42, mass: 0.9 } as con
  */
 export function PostCarousel({
   pages,
-  slides,
   format,
   index,
   onIndexChange,
@@ -98,8 +92,6 @@ export function PostCarousel({
   const frameAspect = aspectRatio(format);
   const panelId = `${uid}-panel`;
   const tabId = (position: number) => `${uid}-tab-${position}`;
-
-  const caption = slideCaption(findSlide(slides, pages[index]?.page_id ?? ""));
 
   function handleDragEnd(_event: unknown, info: PanInfo) {
     const width = viewportRef.current?.clientWidth ?? 0;
@@ -133,7 +125,11 @@ export function PostCarousel({
       onKeyDown={onArrowKeys}
       className={cn(
         "flex items-center justify-center",
-        variant === "bars" ? "w-full gap-1" : "gap-1.5",
+        // `pb-2` only on the below-frame pager: it separates the dots from the
+        // platform's action row, which sits immediately after with nothing but
+        // its own border between them. The overlaid `bars` pager is positioned
+        // over the media and needs no such spacing.
+        variant === "bars" ? "w-full gap-1" : "gap-1.5 pb-2",
       )}
     >
       {pages.map((page, position) => {
@@ -171,129 +167,130 @@ export function PostCarousel({
       role="group"
       aria-roledescription="carousel"
       aria-label={`${formatLabel(format)} slides`}
-      className={cn("flex flex-col gap-2", className)}
+      // `flex-1 min-h-0` so the frame is what gives way when the screen is
+      // short: the dots and copy line below keep their natural height and the
+      // design shrinks, rather than the card running past the fold.
+      className={cn("flex min-h-0 flex-1 flex-col gap-2", className)}
     >
-      <div
-        ref={viewportRef}
-        role="tabpanel"
-        id={panelId}
-        aria-labelledby={multi ? tabId(index) : undefined}
-        tabIndex={0}
-        onKeyDown={onArrowKeys}
-        className={cn(
-          // `text-white` because everything drawn in here — arrows, counter,
-          // overlaid pagers — sits over the letterbox, which is black whatever
-          // the chrome around it looks like.
-          "relative w-full select-none overflow-hidden text-white focus-visible:outline-current",
-          frameClassName,
-        )}
-        style={{ aspectRatio: frameAspect }}
-      >
-        {/* Pan layer: tracks the finger, springs back to zero on release. */}
-        <motion.div
-          className="size-full touch-pan-y"
-          drag={multi ? "x" : false}
-          dragDirectionLock
-          dragConstraints={{ left: 0, right: 0 }}
-          dragMomentum={false}
-          // 1:1 tracking toward a slide that exists; a stiff rubber band toward
-          // one that does not, so "there is nothing further" is felt, not read.
-          dragElastic={{
-            left: canNext ? 1 : 0.12,
-            right: canPrev ? 1 : 0.12,
-            top: 0,
-            bottom: 0,
-          }}
-          dragTransition={{ bounceStiffness: 420, bounceDamping: 42 }}
-          onDragEnd={handleDragEnd}
+      <FitBox aspect={frameAspect}>
+        <div
+          ref={viewportRef}
+          role="tabpanel"
+          id={panelId}
+          aria-labelledby={multi ? tabId(index) : undefined}
+          tabIndex={0}
+          onKeyDown={onArrowKeys}
+          className={cn(
+            // `text-white` because everything drawn in here — arrows, counter,
+            // overlaid pagers — sits over the letterbox, which is black whatever
+            // the chrome around it looks like.
+            "relative size-full select-none overflow-hidden text-white focus-visible:outline-current",
+            frameClassName,
+          )}
         >
-          {/* The track is one viewport wide — flex does not grow to fit
-              shrink-0 children — so -100% is exactly one slide, with no
-              measurement and nothing to resync on resize. */}
+          {/* Pan layer: tracks the finger, springs back to zero on release. */}
           <motion.div
-            className="flex size-full"
-            animate={{ x: `-${index * 100}%` }}
-            transition={reduceMotion ? { duration: 0 } : SPRING}
+            className="size-full touch-pan-y"
+            drag={multi ? "x" : false}
+            dragDirectionLock
+            dragConstraints={{ left: 0, right: 0 }}
+            dragMomentum={false}
+            // 1:1 tracking toward a slide that exists; a stiff rubber band toward
+            // one that does not, so "there is nothing further" is felt, not read.
+            dragElastic={{
+              left: canNext ? 1 : 0.12,
+              right: canPrev ? 1 : 0.12,
+              top: 0,
+              bottom: 0,
+            }}
+            dragTransition={{ bounceStiffness: 420, bounceDamping: 42 }}
+            onDragEnd={handleDragEnd}
           >
-            {pages.map((page, position) => {
-              const html = pagePreviewHtml(page);
-              const size = pageDimensions(page, format);
-              return (
-                <div
-                  key={page.page_id}
-                  role="group"
-                  aria-roledescription="slide"
-                  aria-label={`Slide ${position + 1} of ${count}`}
-                  // Off-slides hold focusable iframes; inert takes them out of
-                  // both the tab order and the accessibility tree at once.
-                  inert={position !== index}
-                  className="grid w-full shrink-0 place-items-center"
-                >
-                  {html ? (
-                    <MediaFrame
-                      frameAspect={frameAspect}
-                      designAspect={size.width / size.height}
-                    >
-                      <HtmlPreview
-                        html={html}
-                        width={size.width}
-                        height={size.height}
-                        title={`${formatLabel(format)} preview, slide ${position + 1}`}
-                        active={Math.abs(position - index) <= windowSize}
-                      />
-                    </MediaFrame>
-                  ) : null}
-                </div>
-              );
-            })}
-          </motion.div>
-        </motion.div>
-
-        {multi ? (
-          <>
-            <p
-              aria-live="polite"
-              aria-atomic
-              className="pointer-events-none absolute right-2 top-2 rounded-full bg-current/15 px-2 py-0.5 text-[0.6875rem] font-medium tabular-nums backdrop-blur-sm"
+            {/* The track is one viewport wide — flex does not grow to fit
+                shrink-0 children — so -100% is exactly one slide, with no
+                measurement and nothing to resync on resize. */}
+            <motion.div
+              className="flex size-full"
+              animate={{ x: `-${index * 100}%` }}
+              transition={reduceMotion ? { duration: 0 } : SPRING}
             >
-              <span className="opacity-90">
-                {index + 1} of {count}
-              </span>
-            </p>
+              {pages.map((page, position) => {
+                const html = pagePreviewHtml(page);
+                const size = pageDimensions(page, format);
+                return (
+                  <div
+                    key={page.page_id}
+                    role="group"
+                    aria-roledescription="slide"
+                    aria-label={`Slide ${position + 1} of ${count}`}
+                    // Off-slides hold focusable iframes; inert takes them out of
+                    // both the tab order and the accessibility tree at once.
+                    inert={position !== index}
+                    // A definite box rather than a centring grid: `MediaFrame`
+                    // is `size-full` and does its own centring, so stretching
+                    // it to the slide is what gives it a height to fill.
+                    className="w-full shrink-0"
+                  >
+                    {html ? (
+                      <MediaFrame
+                        frameAspect={frameAspect}
+                        designAspect={size.width / size.height}
+                      >
+                        <HtmlPreview
+                          html={html}
+                          width={size.width}
+                          height={size.height}
+                          title={`${formatLabel(format)} preview, slide ${position + 1}`}
+                          active={Math.abs(position - index) <= windowSize}
+                        />
+                      </MediaFrame>
+                    ) : null}
+                  </div>
+                );
+              })}
+            </motion.div>
+          </motion.div>
 
-            <CarouselArrow
-              side="left"
-              enabled={canPrev}
-              onClick={() => onIndexChange(index - 1)}
-            />
-            <CarouselArrow
-              side="right"
-              enabled={canNext}
-              onClick={() => onIndexChange(index + 1)}
-            />
+          {multi ? (
+            <>
+              <p
+                aria-live="polite"
+                aria-atomic
+                className="pointer-events-none absolute right-2 top-2 rounded-full bg-current/15 px-2 py-0.5 text-[0.6875rem] font-medium tabular-nums backdrop-blur-sm"
+              >
+                <span className="opacity-90">
+                  {index + 1} of {count}
+                </span>
+              </p>
 
-            {variant === "bars" ? (
-              <div className="absolute inset-x-3 top-2">{tabs}</div>
-            ) : null}
-          </>
-        ) : null}
-      </div>
+              <CarouselArrow
+                side="left"
+                enabled={canPrev}
+                onClick={() => onIndexChange(index - 1)}
+              />
+              <CarouselArrow
+                side="right"
+                enabled={canNext}
+                onClick={() => onIndexChange(index + 1)}
+              />
 
-      {/* Below-frame furniture only exists on the framed formats. An immersive
-          chrome floats its own copy over the media and has no room under it —
-          anything rendered here would land beneath its absolute overlays. Those
-          formats get the slide's copy through the chrome's caption instead. */}
-      {variant === "dots" ? (
-        <>
-          {tabs}
-          {caption ? (
-            <p className="min-w-0 px-1 text-xs leading-snug opacity-70">
-              <span className="font-medium opacity-100">{caption.title}</span>
-              {caption.body ? <span className="ml-1.5">{caption.body}</span> : null}
-            </p>
+              {variant === "bars" ? (
+                <div className="absolute inset-x-3 top-2">{tabs}</div>
+              ) : null}
+            </>
           ) : null}
-        </>
-      ) : null}
+        </div>
+      </FitBox>
+
+      {/* Dots sit below the frame only on the framed formats. An immersive
+          chrome draws its own pager over the media and has no room under it —
+          anything rendered here would land beneath its absolute overlays.
+
+          Nothing of variable height belongs here. The frame takes the space
+          this row leaves, so a per-slide copy line — which is what used to be
+          here — resized the design on every swipe as the copy got longer or
+          shorter. The dots are a fixed height, which is why they are fine. */}
+      {variant === "dots" ? tabs : null}
     </div>
   );
 }

@@ -5,11 +5,13 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Generating } from "@/components/post/generating";
+import { FitBox } from "@/components/post/media-frame";
 import { ReviewSurface } from "@/components/review/review-surface";
 import { ErrorNote, Skeleton } from "@/components/ui/feedback";
 import { usePost } from "@/features/posts/hooks";
 import { usePostPipeline } from "@/features/posts/use-pipeline";
 import { toMessage } from "@/lib/api/errors";
+import { isApproved } from "@/lib/api/types";
 
 export default function PostPage() {
   const postId = String(useParams().id ?? "");
@@ -19,8 +21,10 @@ export default function PostPage() {
 
   if (post.isPending) {
     return (
-      <div className="mx-auto w-full max-w-[34rem]">
-        <Skeleton className="aspect-[3/4] w-full rounded-card" />
+      <div className="mx-auto flex min-h-0 w-full max-w-[34rem] flex-1 flex-col">
+        <FitBox aspect={3 / 4} minHeight="3rem">
+          <Skeleton className="size-full rounded-card" />
+        </FitBox>
       </div>
     );
   }
@@ -40,13 +44,16 @@ export default function PostPage() {
   }
 
   return (
-    <div className="flex flex-col gap-6">
+    <div className="flex min-h-0 flex-1 flex-col gap-4">
+      {/* Points at the list this post belongs to, not the queue. Tiles on
+          /drafts and /approved both land here, so "back to queue" was a lie in
+          the two cases that now bring most people to this page. */}
       <Link
-        href="/review"
-        className="inline-flex w-fit items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
+        href={isApproved(post.data) ? "/approved" : "/drafts"}
+        className="inline-flex w-fit shrink-0 items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
       >
         <ArrowLeft className="size-4" aria-hidden />
-        Back to queue
+        {isApproved(post.data) ? "Back to approved" : "Back to drafts"}
       </Link>
 
       <ReviewSurface post={post.data} onAdvance={() => router.push("/review")} />

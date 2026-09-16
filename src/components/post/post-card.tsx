@@ -5,7 +5,7 @@ import { cn } from "@/lib/utils/cn";
 import { PreviewNote } from "@/components/ui/html-preview";
 import { PostChrome } from "@/components/post/chrome";
 import { chromeMedia } from "@/components/post/chrome/meta";
-import { MediaFrame } from "@/components/post/media-frame";
+import { FitBox, MediaFrame } from "@/components/post/media-frame";
 import { PostCarousel } from "@/components/post/post-carousel";
 import {
   findSlide,
@@ -27,12 +27,18 @@ import type { Brand } from "@/lib/api/types";
  * appear in rather than as a tweet regardless of format. The app canvas stays
  * light either way; only the card changes.
  *
- * Two things worth knowing before editing:
+ * Three things worth knowing before editing:
  *
- *  - The format's frame wins over the design's own size. Every pack page
- *    hardcodes 1080×1350 whatever the post's format is, so a 16:9 X post shows
- *    a letterboxed 4:5 design. That is the honest depiction of the crop the
- *    render will apply, not a layout bug.
+ *  - This card is height-driven, not width-driven. It is `flex-1 min-h-0` in
+ *    the column `ReviewSurface` sets up, and the media is the only part that
+ *    shrinks, so the whole thing stays on one screen whatever the caption's
+ *    length. Adding a fixed height anywhere in the chain, or dropping a
+ *    `min-h-0`, brings back the scroll this was built to remove.
+ *  - The format's frame wins over the design's own size. Designs composed
+ *    before the API started sizing the canvas from `post.format` carry a
+ *    1080×1350 box whatever format they claim, so those letterbox inside the
+ *    frame — the honest depiction of the crop, not a layout bug. Newly composed
+ *    pages match their format and fill it.
  *  - The platform's action glyphs are decorative and hidden from assistive
  *    tech. The real actions are the FABs below the card.
  */
@@ -84,11 +90,12 @@ export function PostCard({
   return (
     <div
       className={cn(
-        "flex flex-col gap-3",
+        "flex min-h-0 flex-1 flex-col gap-3",
         // A 9:16 frame at the review column's full width would stand nearly a
-        // thousand pixels tall and push the FABs off-screen. Capping here
-        // rather than in the chrome keeps the meta line under the card aligned
-        // with it.
+        // thousand pixels tall. The height chain now shrinks it to fit anyway,
+        // but the cap is still what stops a story rendering as a wide, short
+        // sliver on a big screen. Capping here rather than in the chrome keeps
+        // the meta line under the card aligned with it.
         isImmersive(post.format) && "mx-auto w-full max-w-[20rem]",
         className,
       )}
@@ -103,7 +110,6 @@ export function PostCard({
           hasDesign ? (
             <PostCarousel
               pages={pages}
-              slides={post.content?.slides}
               format={post.format}
               index={index}
               onIndexChange={onSlideIndexChange}
@@ -111,22 +117,24 @@ export function PostCard({
               frameClassName={media.frameClassName}
             />
           ) : (
-            <MediaFrame
-              frameAspect={aspectRatio(post.format)}
-              className={media.frameClassName}
-            >
-              {stale ? (
-                <PreviewNote
-                  title="Photos need rebuilding"
-                  body="This post was made before images moved to storage, so its photos cannot load. Edit it, or generate new photos, to rebuild the design."
-                />
-              ) : (
-                <PreviewNote
-                  title="Preview not ready"
-                  body="The design has not been built for this page yet. Re-run the edit, or compose the post again."
-                />
-              )}
-            </MediaFrame>
+            <FitBox aspect={aspectRatio(post.format)}>
+              <MediaFrame
+                frameAspect={aspectRatio(post.format)}
+                className={media.frameClassName}
+              >
+                {stale ? (
+                  <PreviewNote
+                    title="Photos need rebuilding"
+                    body="This post was made before images moved to storage, so its photos cannot load. Edit it, or generate new photos, to rebuild the design."
+                  />
+                ) : (
+                  <PreviewNote
+                    title="Preview not ready"
+                    body="The design has not been built for this page yet. Re-run the edit, or compose the post again."
+                  />
+                )}
+              </MediaFrame>
+            </FitBox>
           )
         }
       />
@@ -143,7 +151,7 @@ export function PostCard({
  */
 function PostMeta({ post }: { post: Post }) {
   return (
-    <footer className="flex flex-col gap-1.5 px-1 text-sm">
+    <footer className="flex shrink-0 flex-col gap-1.5 px-1 text-sm">
       <p className="text-ink-muted">{formatLabel(post.format)}</p>
       {post.content?.source_title ? (
         <p className="flex items-start gap-1.5 text-ink-muted">

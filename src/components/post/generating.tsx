@@ -3,6 +3,7 @@
 import { Check, Loader2, Minus, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ErrorNote, Skeleton } from "@/components/ui/feedback";
+import { FitBox } from "@/components/post/media-frame";
 import { cn } from "@/lib/utils/cn";
 import type { PipelineStep, StepState } from "@/features/posts/use-pipeline";
 
@@ -16,8 +17,11 @@ export function Generating({
   onRetry: () => void;
 }) {
   return (
-    <div className="mx-auto flex w-full max-w-[32rem] flex-col items-center gap-8 py-8">
-      <div className="text-center">
+    // Same height chain as the review surface: everything but the skeleton
+    // card is `shrink-0`, so the placeholder gives way and the step list — the
+    // only part carrying information — stays on screen without a scroll.
+    <div className="mx-auto flex min-h-0 w-full max-w-[32rem] flex-1 flex-col items-center gap-6 py-4">
+      <div className="shrink-0 text-center">
         <h1 className="text-xl font-semibold tracking-tight text-ink">
           Creating your post…
         </h1>
@@ -28,23 +32,28 @@ export function Generating({
       </div>
 
       {/* Skeleton of the card that is about to appear, not a bare spinner. */}
-      <div className="w-full rounded-card bg-card p-5">
-        <div className="flex items-center gap-3">
+      <div className="flex min-h-0 w-full flex-1 flex-col rounded-card bg-card p-5">
+        <div className="flex shrink-0 items-center gap-3">
           <Skeleton className="size-10 rounded-full bg-card-elevated" />
           <div className="flex flex-1 flex-col gap-1.5">
             <Skeleton className="h-3 w-28 bg-card-elevated" />
             <Skeleton className="h-3 w-20 bg-card-elevated" />
           </div>
         </div>
-        <div className="mt-4 flex flex-col gap-2">
+        <div className="mt-4 flex shrink-0 flex-col gap-2">
           <Skeleton className="h-3 w-full bg-card-elevated" />
           <Skeleton className="h-3 w-11/12 bg-card-elevated" />
           <Skeleton className="h-3 w-4/5 bg-card-elevated" />
         </div>
-        <Skeleton className="mt-4 aspect-[4/5] w-full rounded-xl bg-card-elevated" />
+        {/* A low floor: this is a placeholder for a design, not the design, so
+            it can shrink much further than the real frame before it is worth
+            scrolling for. */}
+        <FitBox aspect={4 / 5} minHeight="3rem" className="mt-4">
+          <Skeleton className="size-full rounded-xl bg-card-elevated" />
+        </FitBox>
       </div>
 
-      <ol className="flex w-full flex-col gap-1">
+      <ol className="flex w-full shrink-0 flex-col gap-1">
         {steps.map((step) => (
           <li
             key={step.id}
@@ -70,7 +79,7 @@ export function Generating({
       </ol>
 
       {error ? (
-        <div className="flex w-full flex-col gap-3">
+        <div className="flex w-full shrink-0 flex-col gap-3">
           <ErrorNote message={error} />
           <Button variant="secondary" onClick={onRetry} className="self-start">
             Try again

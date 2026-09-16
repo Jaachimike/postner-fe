@@ -70,6 +70,35 @@
   --radius-card: 20px;
 
   --ease-out-soft: cubic-bezier(0.22, 1, 0.36, 1);
+
+  /* Disclosure rows in the settings ledger. Radix publishes the measured panel
+     height as `--radix-accordion-content-height`; animating to it is what stops
+     an opening row from snapping the rows below it down the page. Closing is
+     quicker than opening — nobody waits to watch something go away. */
+  --animate-accordion-down: accordion-down 220ms var(--ease-out-soft);
+  --animate-accordion-up: accordion-up 160ms var(--ease-out-soft);
+
+  @keyframes accordion-down {
+    from {
+      height: 0;
+      opacity: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+      opacity: 1;
+    }
+  }
+
+  @keyframes accordion-up {
+    from {
+      height: var(--radix-accordion-content-height);
+      opacity: 1;
+    }
+    to {
+      height: 0;
+      opacity: 0;
+    }
+  }
 }
 
 @layer base {
