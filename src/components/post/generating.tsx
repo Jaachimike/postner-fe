@@ -11,10 +11,14 @@ export function Generating({
   steps,
   error,
   onRetry,
+  title = "Creating your post…",
+  description = "Rendering the design takes a moment. You can leave this page and come back — nothing is lost.",
 }: {
   steps: PipelineStep[];
   error: string | null;
-  onRetry: () => void;
+  onRetry?: () => void;
+  title?: string;
+  description?: string;
 }) {
   return (
     // Same height chain as the review surface: everything but the skeleton
@@ -22,13 +26,8 @@ export function Generating({
     // only part carrying information — stays on screen without a scroll.
     <div className="mx-auto flex min-h-0 w-full max-w-[32rem] flex-1 flex-col items-center gap-6 py-4">
       <div className="shrink-0 text-center">
-        <h1 className="text-xl font-semibold tracking-tight text-ink">
-          Creating your post…
-        </h1>
-        <p className="mt-1 text-sm text-ink-muted">
-          Rendering the design takes a moment. You can leave this page and come
-          back — nothing is lost.
-        </p>
+        <h1 className="text-xl font-semibold tracking-tight text-ink">{title}</h1>
+        <p className="mt-1 text-sm text-ink-muted">{description}</p>
       </div>
 
       {/* Skeleton of the card that is about to appear, not a bare spinner. */}
@@ -81,9 +80,11 @@ export function Generating({
       {error ? (
         <div className="flex w-full shrink-0 flex-col gap-3">
           <ErrorNote message={error} />
-          <Button variant="secondary" onClick={onRetry} className="self-start">
-            Try again
-          </Button>
+          {onRetry ? (
+            <Button variant="secondary" onClick={onRetry} className="self-start">
+              Try again
+            </Button>
+          ) : null}
         </div>
       ) : null}
     </div>

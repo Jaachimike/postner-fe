@@ -1,6 +1,5 @@
 "use client";
 
-import * as React from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
@@ -11,12 +10,21 @@ import { ErrorNote, Skeleton } from "@/components/ui/feedback";
 import { usePost } from "@/features/posts/hooks";
 import { usePostPipeline } from "@/features/posts/use-pipeline";
 import { toMessage } from "@/lib/api/errors";
-import { isApproved } from "@/lib/api/types";
+import { hasPreview, isApproved, type Post } from "@/lib/api/types";
+
+function shouldPollPost(post: Post | undefined): boolean {
+  if (!post || hasPreview(post)) return false;
+  if (post.meta?.pipeline_status === "failed") return false;
+  return true;
+}
 
 export default function PostPage() {
   const postId = String(useParams().id ?? "");
   const router = useRouter();
-  const post = usePost(postId);
+  const post = usePost(postId, {
+    refetchInterval: (query) =>
+      shouldPollPost(query.state.data as Post | undefined) ? 2000 : false,
+  });
   const pipeline = usePostPipeline(post.data);
 
   if (post.isPending) {
@@ -45,9 +53,6 @@ export default function PostPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
-      {/* Points at the list this post belongs to, not the queue. Tiles on
-          /drafts and /approved both land here, so "back to queue" was a lie in
-          the two cases that now bring most people to this page. */}
       <Link
         href={isApproved(post.data) ? "/approved" : "/drafts"}
         className="inline-flex w-fit shrink-0 items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
@@ -56,7 +61,7 @@ export default function PostPage() {
         {isApproved(post.data) ? "Back to approved" : "Back to drafts"}
       </Link>
 
-      <ReviewSurface post={post.data} onAdvance={() => router.push("/review")} />
+      <ReviewSurface post={post.data} onAdvance={() => router.push("/approved")} />
     </div>
   );
 }

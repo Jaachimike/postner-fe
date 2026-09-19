@@ -21,23 +21,6 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
-    "/templates": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        /** Templates */
-        get: operations["templates_templates_get"];
-        put?: never;
-        post?: never;
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
-        trace?: never;
-    };
     "/packs": {
         parameters: {
             query?: never;
@@ -47,6 +30,23 @@ export interface paths {
         };
         /** Packs */
         get: operations["packs_packs_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/packs/{pack_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Pack Detail */
+        get: operations["get_pack_detail_packs__pack_id__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -144,6 +144,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/brands/enrich-from-website": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Enrich From Website
+         * @description Scrape a website and draft an About blurb. Does not save the brand.
+         */
+        post: operations["enrich_from_website_brands_enrich_from_website_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/brands/{brand_id}": {
         parameters: {
             query?: never;
@@ -195,8 +215,7 @@ export interface paths {
          */
         get: operations["list_posts_posts_get"];
         put?: never;
-        /** Create Post */
-        post: operations["create_post_posts_post"];
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -393,6 +412,165 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Ingest Source Endpoint */
+        post: operations["ingest_source_endpoint_sources_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Runs */
+        get: operations["list_runs_runs_get"];
+        put?: never;
+        /** Create Run */
+        post: operations["create_run_runs_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Run */
+        get: operations["get_run_runs__run_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Run */
+        patch: operations["patch_run_runs__run_id__patch"];
+        trace?: never;
+    };
+    "/runs/{run_id}/sources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Run Source */
+        post: operations["add_run_source_runs__run_id__sources_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}/suggest": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Suggest Run */
+        post: operations["suggest_run_runs__run_id__suggest_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/runs/{run_id}/generate": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Generate Run */
+        post: operations["generate_run_runs__run_id__generate_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/templates": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Templates */
+        get: operations["list_templates_templates_get"];
+        put?: never;
+        /** Create Template */
+        post: operations["create_template_templates_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/templates/extract": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Extract Template
+         * @description Upload a PNG/JPEG/WebP mockup → vision LLM HTML draft (not persisted).
+         */
+        post: operations["extract_template_templates_extract_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/templates/{slug}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Template */
+        get: operations["get_template_templates__slug__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -408,6 +586,19 @@ export interface components {
              * @default fade_kenburns
              */
             motion_preset: string;
+        };
+        /** Body_extract_template_templates_extract_post */
+        Body_extract_template_templates_extract_post: {
+            /**
+             * File
+             * Format: binary
+             */
+            file: string;
+            /**
+             * Format
+             * @default
+             */
+            format: string;
         };
         /** Body_upload_brand_logo_brands__brand_id__logo_post */
         Body_upload_brand_logo_brands__brand_id__logo_post: {
@@ -475,28 +666,62 @@ export interface components {
             /** Formats */
             formats?: ("ig_feed" | "ig_portrait" | "ig_story" | "tiktok" | "fb_post" | "x_post")[];
         };
-        /** CreatePostRequest */
-        CreatePostRequest: {
+        /** CreateTemplateRequest */
+        CreateTemplateRequest: {
+            /** Slug */
+            slug: string;
             /**
-             * Url
+             * Label
+             * @default
+             */
+            label: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Format
+             * @default ig_feed
+             * @enum {string}
+             */
+            format: "ig_feed" | "ig_portrait" | "ig_story" | "tiktok" | "fb_post" | "x_post";
+            /** Html */
+            html: string;
+            /** Source Image Url */
+            source_image_url?: string | null;
+        };
+        /** EnrichWebsiteBody */
+        EnrichWebsiteBody: {
+            /**
+             * Website
              * Format: uri
              */
-            url: string;
-            /** Brand Id */
-            brand_id?: string | null;
-            /** Pack Id */
-            pack_id?: string | null;
-            /** Template Id */
-            template_id?: string | null;
-            /** Format */
-            format?: ("ig_feed" | "ig_portrait" | "ig_story" | "tiktok" | "fb_post" | "x_post") | null;
-            /** Image Style */
-            image_style?: ("realistic" | "illustration") | null;
+            website: string;
             /**
-             * With Images
-             * @default false
+             * Brand Name
+             * @default
              */
-            with_images: boolean;
+            brand_name: string;
+        };
+        /** EnrichWebsiteOut */
+        EnrichWebsiteOut: {
+            /** Description */
+            description: string;
+        };
+        /** ExtractTemplateResponse */
+        ExtractTemplateResponse: {
+            /** Html */
+            html: string;
+            /** Suggested Slug */
+            suggested_slug: string;
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "ig_feed" | "ig_portrait" | "ig_story" | "tiktok" | "fb_post" | "x_post";
+            /** Source Image Url */
+            source_image_url?: string | null;
         };
         /** FeedbackRequest */
         FeedbackRequest: {
@@ -529,6 +754,40 @@ export interface components {
             /** Created At */
             created_at: string;
         };
+        /** GenerateRequest */
+        GenerateRequest: {
+            /** Source Ids */
+            source_ids: string[];
+            /**
+             * Instruction
+             * @default
+             */
+            instruction: string;
+            /** Suggestion Ids */
+            suggestion_ids?: string[];
+            /** Brand Id */
+            brand_id?: string | null;
+            /** Pack Id */
+            pack_id?: string | null;
+            /** Template Id */
+            template_id?: string | null;
+            /** Design */
+            design?: ("pack" | "template") | null;
+            /** Format */
+            format?: ("ig_feed" | "ig_portrait" | "ig_story" | "tiktok" | "fb_post" | "x_post") | null;
+            /** Image Style */
+            image_style?: ("realistic" | "illustration") | null;
+            /**
+             * With Images
+             * @default false
+             */
+            with_images: boolean;
+        };
+        /** GenerateResponse */
+        GenerateResponse: {
+            /** Posts */
+            posts: components["schemas"]["PostResponse"][];
+        };
         /** HTTPValidationError */
         HTTPValidationError: {
             /** Detail */
@@ -552,15 +811,17 @@ export interface components {
              */
             regenerate: boolean;
         };
+        /** IngestRequest */
+        IngestRequest: {
+            /** Url */
+            url?: string | null;
+            /** Text */
+            text?: string | null;
+        };
         /** ListBrandsOut */
         ListBrandsOut: {
             /** Brands */
             brands: components["schemas"]["BrandOut"][];
-        };
-        /** ListIdsResponse */
-        ListIdsResponse: {
-            /** Ids */
-            ids: string[];
         };
         /** ListPacksResponse */
         ListPacksResponse: {
@@ -576,6 +837,24 @@ export interface components {
         ListRevisionsResponse: {
             /** Revisions */
             revisions: components["schemas"]["RevisionItem"][];
+        };
+        /** ListRunsResponse */
+        ListRunsResponse: {
+            /** Runs */
+            runs: components["schemas"]["RunResponse"][];
+            /** Max Run Sources */
+            max_run_sources: number;
+            /** Default Suggested Posts */
+            default_suggested_posts: number;
+            /** Max Suggested Posts */
+            max_suggested_posts: number;
+        };
+        /** ListTemplatesResponse */
+        ListTemplatesResponse: {
+            /** Templates */
+            templates: components["schemas"]["TemplateSummary"][];
+            /** Ids */
+            ids?: string[];
         };
         /** LoginRequest */
         LoginRequest: {
@@ -600,6 +879,34 @@ export interface components {
             /** Tenant Name */
             tenant_name: string;
         };
+        /** PackDetail */
+        PackDetail: {
+            /** Id */
+            id: string;
+            /** Label */
+            label: string;
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "ig_feed" | "ig_portrait" | "ig_story" | "tiktok" | "fb_post" | "x_post";
+            /** Formats */
+            formats: ("ig_feed" | "ig_portrait" | "ig_story" | "tiktok" | "fb_post" | "x_post")[];
+            /** Pages */
+            pages: number;
+            /** Images */
+            images: number;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Preview Html
+             * @default
+             */
+            preview_html: string;
+        };
         /** PackSummary */
         PackSummary: {
             /** Id */
@@ -622,6 +929,11 @@ export interface components {
              * @default
              */
             description: string;
+            /**
+             * Preview Html
+             * @default
+             */
+            preview_html: string;
         };
         /** PatchBrandBody */
         PatchBrandBody: {
@@ -638,6 +950,13 @@ export interface components {
             /** Formats */
             formats?: ("ig_feed" | "ig_portrait" | "ig_story" | "tiktok" | "fb_post" | "x_post")[] | null;
         };
+        /** PatchRunRequest */
+        PatchRunRequest: {
+            /** Sources */
+            sources?: components["schemas"]["SourceRef"][] | null;
+            /** Instruction */
+            instruction?: string | null;
+        };
         /** PostResponse */
         PostResponse: {
             /** Id */
@@ -648,8 +967,6 @@ export interface components {
             brand_id: string | null;
             /** Status */
             status: string;
-            /** Url */
-            url: string;
             /** Format */
             format: string;
             /** Pack Id */
@@ -784,6 +1101,163 @@ export interface components {
              */
             recompose: boolean;
         };
+        /** RunResponse */
+        RunResponse: {
+            /** Id */
+            id: string;
+            /** Tenant Id */
+            tenant_id: string;
+            /** Sources */
+            sources: components["schemas"]["SourceRef"][];
+            /** Cards */
+            cards: components["schemas"]["SourceCard"][];
+            /** Instruction */
+            instruction: string;
+            /** Suggestions */
+            suggestions: components["schemas"]["SuggestionBrief"][];
+            /** Created At */
+            created_at: string;
+            /** Updated At */
+            updated_at: string;
+        };
+        /** SourceCard */
+        SourceCard: {
+            /** Id */
+            id: string;
+            /** Kind */
+            kind: string;
+            /**
+             * Title
+             * @default
+             */
+            title: string;
+            /**
+             * Canonical Url
+             * @default
+             */
+            canonical_url: string;
+            /**
+             * Thumbnail Url
+             * @default
+             */
+            thumbnail_url: string;
+            /**
+             * Duration
+             * @default
+             */
+            duration: string;
+            /**
+             * Excerpt
+             * @default
+             */
+            excerpt: string;
+            /**
+             * Page Type
+             * @default
+             */
+            page_type: string;
+        };
+        /** SourceRef */
+        SourceRef: {
+            /** Id */
+            id: string;
+            /**
+             * Kind
+             * @default html
+             */
+            kind: string;
+            /**
+             * Url
+             * @default
+             */
+            url: string;
+        };
+        /** SuggestRequest */
+        SuggestRequest: {
+            /** Source Ids */
+            source_ids: string[];
+            /**
+             * Instruction
+             * @default
+             */
+            instruction: string;
+            /** Count */
+            count?: number | null;
+        };
+        /** SuggestResponse */
+        SuggestResponse: {
+            /** Suggestions */
+            suggestions: components["schemas"]["SuggestionBrief"][];
+        };
+        /** SuggestionBrief */
+        SuggestionBrief: {
+            /** Id */
+            id: string;
+            /** Headline */
+            headline: string;
+            /** Text */
+            text: string;
+            /** Reason */
+            reason: string;
+        };
+        /** TemplateDetail */
+        TemplateDetail: {
+            /** Slug */
+            slug: string;
+            /** Label */
+            label: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "ig_feed" | "ig_portrait" | "ig_story" | "tiktok" | "fb_post" | "x_post";
+            /** Html */
+            html: string;
+            /**
+             * Preview Html
+             * @default
+             */
+            preview_html: string;
+            /** Source Image Url */
+            source_image_url?: string | null;
+            /**
+             * Is System
+             * @default false
+             */
+            is_system: boolean;
+        };
+        /** TemplateSummary */
+        TemplateSummary: {
+            /** Slug */
+            slug: string;
+            /** Label */
+            label: string;
+            /**
+             * Description
+             * @default
+             */
+            description: string;
+            /**
+             * Format
+             * @enum {string}
+             */
+            format: "ig_feed" | "ig_portrait" | "ig_story" | "tiktok" | "fb_post" | "x_post";
+            /**
+             * Preview Html
+             * @default
+             */
+            preview_html: string;
+            /**
+             * Is System
+             * @default false
+             */
+            is_system: boolean;
+        };
         /** TokenResponse */
         TokenResponse: {
             /** Access Token */
@@ -836,29 +1310,11 @@ export interface operations {
             };
         };
     };
-    templates_templates_get: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody?: never;
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["ListIdsResponse"];
-                };
-            };
-        };
-    };
     packs_packs_get: {
         parameters: {
-            query?: never;
+            query?: {
+                scope?: string;
+            };
             header?: never;
             path?: never;
             cookie?: never;
@@ -872,6 +1328,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListPacksResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_pack_detail_packs__pack_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                pack_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PackDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
@@ -1048,6 +1544,39 @@ export interface operations {
             };
         };
     };
+    enrich_from_website_brands_enrich_from_website_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["EnrichWebsiteBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EnrichWebsiteOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_brand_brands__brand_id__get: {
         parameters: {
             query?: never;
@@ -1167,39 +1696,6 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ListPostsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_post_posts_post: {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["CreatePostRequest"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                headers: {
-                    [name: string]: unknown;
-                };
-                content: {
-                    "application/json": components["schemas"]["PostResponse"];
                 };
             };
             /** @description Validation Error */
@@ -1573,6 +2069,378 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PostResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ingest_source_endpoint_sources_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SourceCard"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_runs_runs_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListRunsResponse"];
+                };
+            };
+        };
+    };
+    create_run_runs_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunResponse"];
+                };
+            };
+        };
+    };
+    get_run_runs__run_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    patch_run_runs__run_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PatchRunRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_run_source_runs__run_id__sources_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["IngestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RunResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    suggest_run_runs__run_id__suggest_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SuggestRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SuggestResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    generate_run_runs__run_id__generate_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                run_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GenerateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["GenerateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_templates_templates_get: {
+        parameters: {
+            query?: {
+                scope?: string;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListTemplatesResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_template_templates_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreateTemplateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    extract_template_templates_extract_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "multipart/form-data": components["schemas"]["Body_extract_template_templates_extract_post"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ExtractTemplateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_template_templates__slug__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                slug: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TemplateDetail"];
                 };
             };
             /** @description Validation Error */

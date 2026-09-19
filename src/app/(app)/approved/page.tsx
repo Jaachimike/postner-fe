@@ -15,8 +15,8 @@ import { toMessage } from "@/lib/api/errors";
 /**
  * What came out the other end.
  *
- * Not "Live" — Postner does not publish. These are approved and rendered,
- * waiting for you to download them and post them yourself.
+ * Not "Live" — Postner does not publish. These are signed off, waiting for
+ * you to download them and post them yourself.
  */
 export default function ApprovedPage() {
   const posts = usePosts();
@@ -34,7 +34,7 @@ export default function ApprovedPage() {
     <>
       <PageHeader
         title="Approved"
-        description="Signed off and rendered. Open one to download the files."
+        description="Signed off. Download a post here or open it to pick a size."
       />
 
       {posts.isPending ? (
@@ -52,7 +52,7 @@ export default function ApprovedPage() {
           variant="bare"
           icon={CircleCheck}
           title="Nothing approved yet"
-          body="Approve a post in the review queue and it moves here with its files rendered."
+          body="Approve a post in the review queue and it moves here, ready to download."
           action={
             <Button asChild variant="secondary">
               <Link href="/review">Open the review queue</Link>

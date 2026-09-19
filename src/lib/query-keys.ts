@@ -6,4 +6,6 @@ export const queryKeys = {
   posts: ["posts"] as const,
   post: (postId: string) => ["posts", postId] as const,
   revisions: (postId: string) => ["posts", postId, "revisions"] as const,
+  runs: ["runs"] as const,
+  run: (runId: string) => ["runs", runId] as const,
 };

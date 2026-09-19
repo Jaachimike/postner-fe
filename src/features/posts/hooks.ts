@@ -9,7 +9,12 @@ import type { PostFormat } from "@/lib/formats";
 
 type S = components["schemas"];
 
-export function usePosts() {
+export function usePosts(options?: {
+  refetchInterval?:
+    | number
+    | false
+    | ((query: { state: { data: unknown } }) => number | false);
+}) {
   return useQuery({
     queryKey: queryKeys.posts,
     queryFn: async () => {
@@ -21,13 +26,24 @@ export function usePosts() {
       });
       return unwrap<{ posts: Post[] }>(result).posts;
     },
+    refetchInterval: options?.refetchInterval,
   });
 }
 
-export function usePost(postId: string | null, options?: { enabled?: boolean }) {
+export function usePost(
+  postId: string | null,
+  options?: {
+    enabled?: boolean;
+    refetchInterval?:
+      | number
+      | false
+      | ((query: { state: { data: unknown } }) => number | false);
+  },
+) {
   return useQuery({
     queryKey: queryKeys.post(postId ?? ""),
     enabled: Boolean(postId) && options?.enabled !== false,
+    refetchInterval: options?.refetchInterval,
     queryFn: async () => {
       const result = await api.GET("/posts/{post_id}", {
         params: { path: { post_id: postId as string } },
@@ -50,15 +66,110 @@ export function useRevisions(postId: string, enabled = true) {
   });
 }
 
-export function useCreatePost() {
+export function useRuns() {
+  return useQuery({
+    queryKey: queryKeys.runs,
+    queryFn: async () => {
+      const result = await api.GET("/runs");
+      return unwrap<S["ListRunsResponse"]>(result);
+    },
+  });
+}
+
+export function useRun(runId: string | null) {
+  return useQuery({
+    queryKey: queryKeys.run(runId ?? ""),
+    enabled: Boolean(runId),
+    queryFn: async () => {
+      const result = await api.GET("/runs/{run_id}", {
+        params: { path: { run_id: runId as string } },
+      });
+      return unwrap<S["RunResponse"]>(result);
+    },
+  });
+}
+
+export function useCreateRun() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async (body: S["CreatePostRequest"]) => {
-      const result = await api.POST("/posts", { body });
-      return unwrap<Post>(result);
+    mutationFn: async () => {
+      const result = await api.POST("/runs");
+      return unwrap<S["RunResponse"]>(result);
     },
-    onSuccess: (post) => {
-      queryClient.setQueryData(queryKeys.post(post.id), post);
+    onSuccess: (run) => {
+      queryClient.setQueryData(queryKeys.run(run.id), run);
+      queryClient.invalidateQueries({ queryKey: queryKeys.runs });
+    },
+  });
+}
+
+export function useAddRunSource(runId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: S["IngestRequest"]) => {
+      const result = await api.POST("/runs/{run_id}/sources", {
+        params: { path: { run_id: runId as string } },
+        body,
+      });
+      return unwrap<S["RunResponse"]>(result);
+    },
+    onSuccess: (run) => {
+      queryClient.setQueryData(queryKeys.run(run.id), run);
+      queryClient.invalidateQueries({ queryKey: queryKeys.runs });
+    },
+  });
+}
+
+export function usePatchRun(runId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: S["PatchRunRequest"]) => {
+      const result = await api.PATCH("/runs/{run_id}", {
+        params: { path: { run_id: runId as string } },
+        body,
+      });
+      return unwrap<S["RunResponse"]>(result);
+    },
+    onSuccess: (run) => {
+      queryClient.setQueryData(queryKeys.run(run.id), run);
+      queryClient.invalidateQueries({ queryKey: queryKeys.runs });
+    },
+  });
+}
+
+export function useSuggestRun(runId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: S["SuggestRequest"]) => {
+      const result = await api.POST("/runs/{run_id}/suggest", {
+        params: { path: { run_id: runId as string } },
+        body,
+      });
+      return unwrap<S["SuggestResponse"]>(result);
+    },
+    onSuccess: (data) => {
+      if (!runId) return;
+      queryClient.setQueryData(queryKeys.run(runId), (current: S["RunResponse"] | undefined) =>
+        current ? { ...current, suggestions: data.suggestions } : current,
+      );
+    },
+  });
+}
+
+export function useGenerateRun(runId: string | null) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (body: S["GenerateRequest"]) => {
+      const result = await api.POST("/runs/{run_id}/generate", {
+        params: { path: { run_id: runId as string } },
+        body,
+      });
+      return unwrap<S["GenerateResponse"]>(result);
+    },
+    onSuccess: (data) => {
+      for (const post of data.posts) {
+        queryClient.setQueryData(queryKeys.post(post.id), post);
+      }
       queryClient.invalidateQueries({ queryKey: queryKeys.posts });
     },
   });
@@ -101,24 +212,53 @@ export function useCompose(postId: string) {
   });
 }
 
+/** Re-enqueue draft/compose after a pipeline failure (worker-owned path). */
+export function useFinalizePost(postId: string) {
+  return usePostMutation<undefined>(postId, async () => {
+    const response = await fetch(`/api/proxy/posts/${encodeURIComponent(postId)}/finalize`, {
+      method: "POST",
+      headers: { Accept: "application/json" },
+    });
+    if (!response.ok) {
+      let body: unknown;
+      try {
+        body = await response.json();
+      } catch {
+        body = undefined;
+      }
+      const { ApiError, apiErrorMessage } = await import("@/lib/api/errors");
+      throw new ApiError(
+        apiErrorMessage(body, `Request failed (${response.status})`),
+        response.status,
+        body,
+      );
+    }
+    return (await response.json()) as Post;
+  });
+}
+
 /**
- * Runs Playwright and uploads the PNGs.
+ * Runs Playwright and uploads the PNGs into `composed.renders`.
  *
- * Approving a post already triggers this server-side, so this is for the paths
- * that need files without a fresh approval — re-rendering after a resize, or
- * retrying a render that failed.
+ * Approving does not render. This is for an explicit re-render, or for the
+ * download endpoint's cache miss.
  */
 export function useRender(postId: string) {
-  return usePostMutation<{ pages?: string[] | null }>(postId, async (body) => {
-    const result = await api.POST("/posts/{post_id}/render", {
-      params: { path: { post_id: postId } },
-      // The endpoint shares ComposeRequest, so `ensure_images` is part of the
-      // shape — but render only reads `pages`; the images are long settled by
-      // the time anything is rasterised.
-      body: { ensure_images: true, ...body },
-    });
-    return unwrap<Post>(result);
-  });
+  return usePostMutation<{ pages?: string[] | null; format?: PostFormat | null }>(
+    postId,
+    async (body) => {
+      const result = await api.POST("/posts/{post_id}/render", {
+        params: { path: { post_id: postId } },
+        // Generated schema still types this as ComposeRequest; `format` is new.
+        body: {
+          ensure_images: true,
+          pages: body.pages,
+          format: body.format,
+        } as S["ComposeRequest"],
+      });
+      return unwrap<Post>(result);
+    },
+  );
 }
 
 export function useRewrite(postId: string) {

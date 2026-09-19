@@ -163,7 +163,7 @@ export function DownloadSheet({
           ) : (
             <div className="flex flex-col gap-2">
               <p className="text-xs text-ink-subtle">
-                No files yet — approving builds them.
+                No files yet — download renders them.
               </p>
               <Button
                 variant="secondary"

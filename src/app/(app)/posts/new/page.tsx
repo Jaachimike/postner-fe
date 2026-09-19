@@ -11,7 +11,7 @@ export default function NewPostPage() {
     <div className="mx-auto w-full max-w-xl">
       <PageHeader
         title="New post"
-        description="Point us at a URL. We read it, write the copy, and design the slides."
+        description="Add sources, suggest angles, then generate drafts."
       />
       {/* `useSearchParams` in the form needs this boundary. */}
       <Suspense fallback={<Skeleton className="h-96 rounded-2xl" />}>

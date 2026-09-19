@@ -1,8 +1,6 @@
 "use client";
 
-import * as React from "react";
-import { useCompose, useGenerateImages } from "@/features/posts/hooks";
-import { toMessage } from "@/lib/api/errors";
+import { useFinalizePost } from "@/features/posts/hooks";
 import { hasPreview, type Post } from "@/lib/api/types";
 
 export type StepState = "pending" | "running" | "done" | "skipped" | "error";
@@ -13,88 +11,109 @@ export interface PipelineStep {
   state: StepState;
 }
 
-/**
- * Drives draft -> images -> HTML preview to completion.
- *
- * It stops at the preview on purpose. `POST /compose` now only fills the
- * template HTML; the Playwright render and the storage upload happen at
- * approval (`POST /feedback`) or on an explicit `POST /render`. Nothing here
- * should ever trigger a PNG — that is the whole point of the split, so that we
- * only rasterise designs a person actually kept.
- */
-export function usePostPipeline(post: Post | undefined) {
-  const postId = post?.id ?? "";
-  const images = useGenerateImages(postId);
-  const compose = useCompose(postId);
-  const [error, setError] = React.useState<string | null>(null);
-
-  // Text-only packs need no Recraft pass at all.
-  const needsImages = (post?.content?.pack_images_needed ?? 1) > 0;
+export function pipelineStepsForPost(post: Post | undefined): PipelineStep[] {
   const isReady = Boolean(post && hasPreview(post));
-  const hasImages = Object.keys(post?.images ?? {}).length > 0;
+  const status =
+    typeof post?.meta?.pipeline_status === "string" ? post.meta.pipeline_status : "";
+  const isFailed = status === "failed";
+  const needsImages = (post?.content?.pack_images_needed ?? 1) > 0;
+  const byPage = (post?.images as { by_page?: Record<string, unknown> } | undefined)
+    ?.by_page;
+  const hasImages = Boolean(byPage && Object.keys(byPage).length > 0);
+  const hasCopy = postHasCopy(post);
 
-  const started = React.useRef(false);
+  const drafting =
+    status === "drafting" ||
+    post?.status === "drafting" ||
+    (!hasCopy && !isReady && !isFailed);
+  const composing =
+    status === "composing" ||
+    post?.status === "imaged" ||
+    (hasCopy && !isReady && !isFailed);
 
-  const run = React.useCallback(async () => {
-    if (!post) return;
-    setError(null);
-    try {
-      if (needsImages && !hasImages) {
-        await images.mutateAsync({ regenerate: false });
-      }
-      await compose.mutateAsync({ ensure_images: true });
-    } catch (cause) {
-      setError(toMessage(cause, "Generation failed."));
-    }
-    // `images`/`compose` are stable mutation objects from React Query; including
-    // them would re-create this callback on every render and restart the run.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [post, needsImages, hasImages]);
-
-  React.useEffect(() => {
-    if (!post || isReady || started.current) return;
-    started.current = true;
-    void run();
-  }, [post, isReady, run]);
-
-  function retry() {
-    started.current = true;
-    void run();
-  }
-
-  const steps: PipelineStep[] = [
-    { id: "draft", label: "Drafting copy", state: post ? "done" : "running" },
+  return [
+    {
+      id: "draft",
+      label: "Drafting copy",
+      state:
+        isFailed && !hasCopy
+          ? "error"
+          : hasCopy || isReady
+            ? "done"
+            : drafting
+              ? "running"
+              : "pending",
+    },
     {
       id: "images",
       label: "Generating photos",
       state: !needsImages
         ? "skipped"
-        : images.isPending
-          ? "running"
-          : hasImages
+        : isFailed && hasCopy && !hasImages && !isReady
+          ? "error"
+          : hasImages || isReady
             ? "done"
-            : error && !isReady
-              ? "error"
+            : composing
+              ? "running"
               : "pending",
     },
     {
       id: "preview",
       label: "Building the design",
-      state: compose.isPending
-        ? "running"
+      state: isFailed && !isReady
+        ? "error"
         : isReady
           ? "done"
-          : error
-            ? "error"
+          : composing
+            ? "running"
             : "pending",
     },
   ];
+}
+
+/**
+ * Waits for the worker to finish draft → images → HTML preview.
+ *
+ * Does not call /images or /compose — those are owned by Taskiq so opening
+ * this page never recomposes an already-finished post. The caller should
+ * poll `usePost` while `!isReady && !error`.
+ */
+export function usePostPipeline(post: Post | undefined) {
+  const postId = post?.id ?? "";
+  const isReady = Boolean(post && hasPreview(post));
+  const status =
+    typeof post?.meta?.pipeline_status === "string" ? post.meta.pipeline_status : "";
+  const isFailed = status === "failed";
+  const metaError =
+    typeof post?.meta?.pipeline_error === "string" && post.meta.pipeline_error.trim()
+      ? post.meta.pipeline_error.trim()
+      : null;
+  const error = isFailed ? metaError ?? "Generation failed." : null;
+
+  const finalize = useFinalizePost(postId);
+  const steps = pipelineStepsForPost(post);
+
+  function retry() {
+    if (!postId) return;
+    void finalize.mutateAsync(undefined);
+  }
 
   return {
     steps,
-    error,
+    error: finalize.isError ? "Could not restart generation." : error,
     retry,
-    isRunning: images.isPending || compose.isPending,
+    isRunning: !isReady && !isFailed,
     isReady,
+    isFailed,
+    shouldPoll: Boolean(post) && !isReady && !isFailed,
   };
+}
+
+function postHasCopy(post: Post | undefined): boolean {
+  if (!post?.content) return false;
+  const content = post.content;
+  if (content.mode === "pack") return (content.slides?.length ?? 0) > 0;
+  return Boolean(
+    content.ig_fb_caption || content.overlay_text || content.visual_prompt,
+  );
 }

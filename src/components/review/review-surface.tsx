@@ -6,22 +6,22 @@ import { PostCard } from "@/components/post/post-card";
 import { FabRow } from "@/components/post/fab-row";
 import { RejectSheet } from "@/components/review/reject-sheet";
 import { EditSheet } from "@/components/review/edit-sheet";
-import { DownloadSheet } from "@/components/review/download-sheet";
-import { ErrorNote, Spinner } from "@/components/ui/feedback";
+import { ApprovedDownloadBar } from "@/components/review/download-approved-button";
+import { ErrorNote } from "@/components/ui/feedback";
 import { useFeedback } from "@/features/posts/hooks";
 import { useBrands } from "@/features/brands/hooks";
 import { useSlideIndex } from "@/features/posts/use-slide-index";
 import { toMessage } from "@/lib/api/errors";
-import { previewPages, type Post } from "@/lib/api/types";
+import { isApproved, previewPages, type Post } from "@/lib/api/types";
 
-type Sheet = "none" | "reject" | "edit" | "download";
+type Sheet = "none" | "reject" | "edit";
 
 /**
  * The review chrome: one card, three actions.
  *
  * `onAdvance` is what makes this reusable between the single-post route and
- * the queue — in the queue it moves to the next card, on a detail page it is
- * a no-op.
+ * the queue — in the queue it moves to the next card, on a detail page it
+ * leaves for /approved.
  */
 export function ReviewSurface({
   post,
@@ -36,6 +36,7 @@ export function ReviewSurface({
   const feedback = useFeedback(post.id);
   const brands = useBrands();
   const reduceMotion = useReducedMotion();
+  const approved = isApproved(post);
 
   const brand = brands.data?.find((item) => item.id === post.brand_id);
 
@@ -52,16 +53,8 @@ export function ReviewSurface({
   const slide = useSlideIndex(post.id, pages.length);
   const activePageId = pages[slide.index]?.page_id ?? "";
 
-  /**
-   * Approving is the expensive step now: the API renders every page with
-   * Playwright and uploads the PNGs before it answers, so this request runs for
-   * seconds rather than milliseconds. Say so instead of leaving a dead button.
-   */
   function approve() {
-    feedback.mutate(
-      { decision: "approved" },
-      { onSuccess: () => setSheet("download") },
-    );
+    feedback.mutate({ decision: "approved" }, { onSuccess: onAdvance });
   }
 
   return (
@@ -96,22 +89,16 @@ export function ReviewSurface({
         </AnimatePresence>
       </div>
 
-      <FabRow
-        onReject={() => setSheet("reject")}
-        onEdit={() => setSheet("edit")}
-        onApprove={approve}
-        disabled={feedback.isPending}
-      />
-
-      {feedback.isPending ? (
-        <p
-          className="flex items-center gap-2 text-sm text-ink-muted"
-          aria-live="polite"
-        >
-          <Spinner />
-          Rendering your files…
-        </p>
-      ) : null}
+      {approved ? (
+        <ApprovedDownloadBar post={post} />
+      ) : (
+        <FabRow
+          onReject={() => setSheet("reject")}
+          onEdit={() => setSheet("edit")}
+          onApprove={approve}
+          disabled={feedback.isPending}
+        />
+      )}
 
       {footer}
 
@@ -127,15 +114,6 @@ export function ReviewSurface({
         open={sheet === "edit"}
         onOpenChange={(open) => setSheet(open ? "edit" : "none")}
         defaultPageId={activePageId}
-      />
-      <DownloadSheet
-        post={post}
-        open={sheet === "download"}
-        onOpenChange={(open) => setSheet(open ? "download" : "none")}
-        onDone={() => {
-          setSheet("none");
-          onAdvance();
-        }}
       />
     </div>
   );

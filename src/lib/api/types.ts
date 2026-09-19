@@ -6,8 +6,11 @@ type S = components["schemas"];
 export type Brand = S["BrandOut"];
 export type CreateBrandBody = S["CreateBrandBody"];
 export type PatchBrandBody = S["PatchBrandBody"];
+export type EnrichWebsiteBody = S["EnrichWebsiteBody"];
+export type EnrichWebsiteOut = S["EnrichWebsiteOut"];
 export type Pack = S["PackSummary"];
-export type ImageStyle = NonNullable<S["CreatePostRequest"]["image_style"]>;
+export type TemplateSummary = S["TemplateSummary"];
+export type ImageStyle = NonNullable<S["GenerateRequest"]["image_style"]>;
 export type Revision = S["RevisionItem"];
 export type TokenResponse = S["TokenResponse"];
 export type Me = S["MeResponse"];
@@ -137,12 +140,16 @@ export interface ComposedPage {
   width?: number;
   height?: number;
   /**
-   * Public object-storage URL for the rendered PNG. Absent until `POST /render`
-   * (or approve) has run — rendering uploads and then discards the local file,
-   * so a page is either rendered with a `url` or not rendered at all.
+   * Public object-storage URL for a rendered PNG on the preview page. Prefer
+   * `composed.renders[format]` for downloads; this field is leftover from when
+   * approve wrote PNGs onto `pages`.
    */
   url?: string;
   key?: string;
+}
+
+export interface ComposedRender {
+  pages?: ComposedPage[];
 }
 
 export interface ComposedPayload {
@@ -150,6 +157,8 @@ export interface ComposedPayload {
   page_paths?: string[];
   final_path?: string | null;
   videos?: Record<string, string>;
+  /** Screenshots keyed by social format. Preview HTML stays on `pages`. */
+  renders?: Record<string, ComposedRender>;
 }
 
 /**
@@ -160,6 +169,7 @@ export interface ComposedPayload {
  * written before that split still carry it.
  */
 export type PostStatus =
+  | "drafting"
   | "drafted"
   | "imaged"
   | "composed"
@@ -204,8 +214,7 @@ export function isReviewable(post: Post): boolean {
 /**
  * The post came out the other end of review.
  *
- * Approving is what triggers the render server-side, so an approved post is
- * also the only kind that reliably has files behind it.
+ * Approving only flips status. Files are built on download.
  */
 export function isApproved(post: Post): boolean {
   return post.status === "approved";
@@ -336,11 +345,14 @@ export function hasPreview(post: Post): boolean {
 }
 
 /**
- * Every page has a rendered PNG. Mirrors the API's own `_page_has_png`, which
- * decides whether approving triggers a render — keep the two in step, or the
- * UI will offer downloads for files the API does not think exist.
+ * Every page has a rendered PNG for the post's own format, either on
+ * `composed.renders` or leftover on `pages[].url`.
  */
 export function isRendered(post: Post): boolean {
+  const stored = post.composed?.renders?.[post.format]?.pages ?? [];
+  if (stored.length > 0 && stored.every((page) => Boolean(page.url))) {
+    return true;
+  }
   const pages = composedPages(post);
   return pages.length > 0 && pages.every((page) => Boolean(page.url));
 }

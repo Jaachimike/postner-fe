@@ -4,7 +4,13 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { api, unwrap } from "@/lib/api/client";
 import { ApiError, apiErrorMessage } from "@/lib/api/errors";
 import { queryKeys } from "@/lib/query-keys";
-import type { Brand, CreateBrandBody, PatchBrandBody } from "@/lib/api/types";
+import type {
+  Brand,
+  CreateBrandBody,
+  EnrichWebsiteBody,
+  EnrichWebsiteOut,
+  PatchBrandBody,
+} from "@/lib/api/types";
 
 export function useBrands() {
   return useQuery({
@@ -12,6 +18,15 @@ export function useBrands() {
     queryFn: async () => {
       const result = await api.GET("/brands");
       return unwrap<{ brands: Brand[] }>(result).brands;
+    },
+  });
+}
+
+export function useEnrichBrandAbout() {
+  return useMutation({
+    mutationFn: async (body: EnrichWebsiteBody) => {
+      const result = await api.POST("/brands/enrich-from-website", { body });
+      return unwrap<EnrichWebsiteOut>(result);
     },
   });
 }
