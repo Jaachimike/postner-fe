@@ -1199,6 +1199,11 @@ export interface components {
             text: string;
             /** Reason */
             reason: string;
+            /**
+             * Source Ids
+             * @default []
+             */
+            source_ids: string[];
         };
         /** TemplateDetail */
         TemplateDetail: {

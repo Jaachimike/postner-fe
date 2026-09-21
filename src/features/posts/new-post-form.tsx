@@ -258,6 +258,13 @@ export function NewPostForm() {
     });
   }
 
+  function sourceLabelFor(sourceId: string): string | null {
+    const card = cards.find((item) => item.id === sourceId);
+    if (!card) return null;
+    const host = card.canonical_url ? hostnameOf(card.canonical_url) : null;
+    return card.title || host || null;
+  }
+
   function onSuggest() {
     if (!runId || sourceIds.length === 0) return;
     suggest.mutate({
@@ -414,6 +421,10 @@ export function NewPostForm() {
           <ul className="flex flex-col gap-2">
             {suggestions.map((brief) => {
               const checked = selectedIds.has(brief.id);
+              const sourceLabel = (brief.source_ids ?? [])
+                .map((id) => sourceLabelFor(id))
+                .filter(Boolean)
+                .join(" · ");
               return (
                 <li key={brief.id}>
                   <label
@@ -429,6 +440,11 @@ export function NewPostForm() {
                       onChange={() => toggleBrief(brief.id)}
                     />
                     <span className="flex min-w-0 flex-col gap-1">
+                      {sourceLabel ? (
+                        <span className="text-xs text-ink-subtle">
+                          From {sourceLabel}
+                        </span>
+                      ) : null}
                       <span className="text-sm font-medium text-ink">{brief.headline}</span>
                       <span className="text-sm text-ink-muted">{brief.text}</span>
                       <span className="text-xs text-ink-subtle">{brief.reason}</span>
