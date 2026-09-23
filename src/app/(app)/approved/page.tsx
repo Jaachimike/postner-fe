@@ -9,6 +9,7 @@ import { Button } from "@/components/ui/button";
 import { EmptyState, ErrorNote, Skeleton } from "@/components/ui/feedback";
 import { usePosts } from "@/features/posts/hooks";
 import { useBrands } from "@/features/brands/hooks";
+import { useScheduledPosts } from "@/features/social/hooks";
 import { isApproved, type Post } from "@/lib/api/types";
 import { toMessage } from "@/lib/api/errors";
 
@@ -21,6 +22,8 @@ import { toMessage } from "@/lib/api/errors";
 export default function ApprovedPage() {
   const posts = usePosts();
   const brands = useBrands();
+  // One request for the whole grid; `PostGrid` matches rows to tiles.
+  const scheduled = useScheduledPosts();
 
   const approved = React.useMemo(
     () =>
@@ -34,7 +37,7 @@ export default function ApprovedPage() {
     <>
       <PageHeader
         title="Approved"
-        description="Signed off. Download a post here or open it to pick a size."
+        description="Signed off. Download a post here, or schedule it to a connected account."
       />
 
       {posts.isPending ? (
@@ -60,7 +63,7 @@ export default function ApprovedPage() {
           }
         />
       ) : (
-        <PostGrid posts={approved} brands={brands.data} />
+        <PostGrid posts={approved} brands={brands.data} scheduled={scheduled.data} />
       )}
     </>
   );

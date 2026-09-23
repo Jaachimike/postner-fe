@@ -273,6 +273,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/posts/{post_id}/finalize": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Post Finalize
+         * @description Re-enqueue (or inline) draft/compose after a pipeline failure.
+         */
+        post: operations["post_finalize_posts__post_id__finalize_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/posts/{post_id}/render": {
         parameters: {
             query?: never;
@@ -284,9 +304,29 @@ export interface paths {
         put?: never;
         /**
          * Post Render
-         * @description Generate download PNGs from filled HTML (Playwright + storage upload).
+         * @description Screenshot HTML at an optional format into composed.renders.
          */
         post: operations["post_render_posts__post_id__render_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/posts/{post_id}/download": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Download
+         * @description PNG for a single page, zip for a pack. Renders the format on cache miss.
+         */
+        get: operations["get_download_posts__post_id__download_get"];
+        put?: never;
+        post?: never;
         delete?: never;
         options?: never;
         head?: never;
@@ -571,6 +611,184 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/brands/{brand_id}/connect/meta": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Start Meta Oauth */
+        get: operations["start_meta_oauth_brands__brand_id__connect_meta_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/oauth/meta/callback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Meta Oauth Callback
+         * @description Meta redirects here (no JWT). State carries brand/user/platform.
+         */
+        get: operations["meta_oauth_callback_oauth_meta_callback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/brands/{brand_id}/oauth/meta/pages": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Meta Pages */
+        get: operations["list_meta_pages_brands__brand_id__oauth_meta_pages_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/brands/{brand_id}/connections": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Connections */
+        get: operations["list_connections_brands__brand_id__connections_get"];
+        put?: never;
+        /** Complete Connection */
+        post: operations["complete_connection_brands__brand_id__connections_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/brands/{brand_id}/connections/{connection_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Disconnect */
+        delete: operations["disconnect_brands__brand_id__connections__connection_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scheduled-posts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Scheduled */
+        get: operations["list_scheduled_scheduled_posts_get"];
+        put?: never;
+        /** Schedule Post */
+        post: operations["schedule_post_scheduled_posts_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/scheduled-posts/{scheduled_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Scheduled */
+        get: operations["get_scheduled_scheduled_posts__scheduled_id__get"];
+        put?: never;
+        post?: never;
+        /** Cancel */
+        delete: operations["cancel_scheduled_posts__scheduled_id__delete"];
+        options?: never;
+        head?: never;
+        /** Reschedule */
+        patch: operations["reschedule_scheduled_posts__scheduled_id__patch"];
+        trace?: never;
+    };
+    "/brands/{brand_id}/connections/{connection_id}/posting-schedule": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Posting Schedule */
+        get: operations["get_posting_schedule_brands__brand_id__connections__connection_id__posting_schedule_get"];
+        /** Put Posting Schedule */
+        put: operations["put_posting_schedule_brands__brand_id__connections__connection_id__posting_schedule_put"];
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/brands/{brand_id}/connections/{connection_id}/posting-schedule/reset": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Reset Posting Schedule */
+        post: operations["reset_posting_schedule_brands__brand_id__connections__connection_id__posting_schedule_reset_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/brands/{brand_id}/connections/{connection_id}/next-slot": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Next Slot */
+        get: operations["get_next_slot_brands__brand_id__connections__connection_id__next_slot_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -589,10 +807,7 @@ export interface components {
         };
         /** Body_extract_template_templates_extract_post */
         Body_extract_template_templates_extract_post: {
-            /**
-             * File
-             * Format: binary
-             */
+            /** File */
             file: string;
             /**
              * Format
@@ -602,10 +817,7 @@ export interface components {
         };
         /** Body_upload_brand_logo_brands__brand_id__logo_post */
         Body_upload_brand_logo_brands__brand_id__logo_post: {
-            /**
-             * File
-             * Format: binary
-             */
+            /** File */
             file: string;
         };
         /** BrandOut */
@@ -633,6 +845,18 @@ export interface components {
             /** Formats */
             formats?: ("ig_feed" | "ig_portrait" | "ig_story" | "tiktok" | "fb_post" | "x_post")[];
         };
+        /** CompleteConnectionBody */
+        CompleteConnectionBody: {
+            /**
+             * Platform
+             * @enum {string}
+             */
+            platform: "instagram" | "facebook";
+            /** Nonce */
+            nonce: string;
+            /** Page Id */
+            page_id: string;
+        };
         /** ComposeRequest */
         ComposeRequest: {
             /** Pages */
@@ -642,6 +866,33 @@ export interface components {
              * @default true
              */
             ensure_images: boolean;
+        };
+        /** ConnectionOut */
+        ConnectionOut: {
+            /** Id */
+            id: string;
+            /** Brand Id */
+            brand_id: string;
+            /** Platform */
+            platform: string;
+            /** External Account Id */
+            external_account_id: string;
+            /** Display Name */
+            display_name: string;
+            /** Page Id */
+            page_id: string;
+            /** Token Expires At */
+            token_expires_at?: string | null;
+            /** Scopes */
+            scopes?: string[];
+            /** Status */
+            status: string;
+            /** Connected By User Id */
+            connected_by_user_id?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
         };
         /** CreateBrandBody */
         CreateBrandBody: {
@@ -823,6 +1074,18 @@ export interface components {
             /** Brands */
             brands: components["schemas"]["BrandOut"][];
         };
+        /** ListConnectionsOut */
+        ListConnectionsOut: {
+            /** Connections */
+            connections: components["schemas"]["ConnectionOut"][];
+        };
+        /** ListMetaPagesOut */
+        ListMetaPagesOut: {
+            /** Pages */
+            pages: components["schemas"]["MetaPageOut"][];
+            /** Platform */
+            platform: string;
+        };
         /** ListPacksResponse */
         ListPacksResponse: {
             /** Packs */
@@ -848,6 +1111,11 @@ export interface components {
             default_suggested_posts: number;
             /** Max Suggested Posts */
             max_suggested_posts: number;
+        };
+        /** ListScheduledOut */
+        ListScheduledOut: {
+            /** Items */
+            items?: components["schemas"]["ScheduledPostOut"][];
         };
         /** ListTemplatesResponse */
         ListTemplatesResponse: {
@@ -878,6 +1146,30 @@ export interface components {
             tenant_id: string;
             /** Tenant Name */
             tenant_name: string;
+        };
+        /** MetaPageOut */
+        MetaPageOut: {
+            /** Id */
+            id: string;
+            /** Name */
+            name: string;
+            /** Instagram Business Account Id */
+            instagram_business_account_id?: string | null;
+            /** Instagram Username */
+            instagram_username?: string | null;
+        };
+        /** NextSlotOut */
+        NextSlotOut: {
+            /** Scheduled At */
+            scheduled_at: string;
+            /** Timezone */
+            timezone: string;
+            /** Slot */
+            slot: {
+                [key: string]: unknown;
+            };
+            /** Connection Id */
+            connection_id: string;
         };
         /** PackDetail */
         PackDetail: {
@@ -996,6 +1288,40 @@ export interface components {
             /** Updated At */
             updated_at: string;
         };
+        /** PostingScheduleIn */
+        PostingScheduleIn: {
+            /**
+             * Timezone
+             * @default UTC
+             */
+            timezone: string;
+            /** Slots */
+            slots: components["schemas"]["ScheduleSlotIn"][];
+        };
+        /** PostingScheduleOut */
+        PostingScheduleOut: {
+            /** Id */
+            id: string;
+            /** Connection Id */
+            connection_id: string;
+            /** Brand Id */
+            brand_id: string;
+            /** Timezone */
+            timezone: string;
+            /** Slots */
+            slots: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Posts Per Week
+             * @default 0
+             */
+            posts_per_week: number;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
+        };
         /** ProposePacksRequest */
         ProposePacksRequest: {
             /** Brand Id */
@@ -1055,6 +1381,21 @@ export interface components {
              * @default
              */
             name: string;
+        };
+        /** RenderRequest */
+        RenderRequest: {
+            /** Pages */
+            pages?: string[] | null;
+            /** Format */
+            format?: ("ig_feed" | "ig_portrait" | "ig_story" | "tiktok" | "fb_post" | "x_post") | null;
+        };
+        /** RescheduleIn */
+        RescheduleIn: {
+            /**
+             * Scheduled At
+             * Format: date-time
+             */
+            scheduled_at: string;
         };
         /** ResizeRequest */
         ResizeRequest: {
@@ -1119,6 +1460,76 @@ export interface components {
             created_at: string;
             /** Updated At */
             updated_at: string;
+        };
+        /** SchedulePostIn */
+        SchedulePostIn: {
+            /**
+             * Post Id
+             * Format: uuid
+             */
+            post_id: string;
+            /**
+             * Platform
+             * @enum {string}
+             */
+            platform: "instagram" | "facebook";
+            /**
+             * Connection Id
+             * Format: uuid
+             */
+            connection_id: string;
+            /**
+             * Scheduled At
+             * Format: date-time
+             */
+            scheduled_at: string;
+        };
+        /** ScheduleSlotIn */
+        ScheduleSlotIn: {
+            /**
+             * Time
+             * @description HH:MM 24h local time
+             */
+            time: string;
+            /**
+             * Days
+             * @description 0=Mon … 6=Sun
+             */
+            days: number[];
+        };
+        /** ScheduledPostOut */
+        ScheduledPostOut: {
+            /** Id */
+            id: string;
+            /** Tenant Id */
+            tenant_id: string;
+            /** Brand Id */
+            brand_id: string;
+            /** Post Id */
+            post_id: string;
+            /** Connection Id */
+            connection_id: string;
+            /** Platform */
+            platform: string;
+            /** Scheduled At */
+            scheduled_at?: string | null;
+            /** Next Attempt At */
+            next_attempt_at?: string | null;
+            /** Status */
+            status: string;
+            /**
+             * Attempts
+             * @default 0
+             */
+            attempts: number;
+            /** Last Error */
+            last_error?: string | null;
+            /** Platform Post Id */
+            platform_post_id?: string | null;
+            /** Created At */
+            created_at?: string | null;
+            /** Updated At */
+            updated_at?: string | null;
         };
         /** SourceCard */
         SourceCard: {
@@ -1199,11 +1610,8 @@ export interface components {
             text: string;
             /** Reason */
             reason: string;
-            /**
-             * Source Ids
-             * @default []
-             */
-            source_ids: string[];
+            /** Source Ids */
+            source_ids?: string[];
         };
         /** TemplateDetail */
         TemplateDetail: {
@@ -1285,6 +1693,10 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+            /** Input */
+            input?: unknown;
+            /** Context */
+            ctx?: Record<string, never>;
         };
     };
     responses: never;
@@ -1815,6 +2227,37 @@ export interface operations {
             };
         };
     };
+    post_finalize_posts__post_id__finalize_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     post_render_posts__post_id__render_post: {
         parameters: {
             query?: never;
@@ -1826,7 +2269,7 @@ export interface operations {
         };
         requestBody?: {
             content: {
-                "application/json": components["schemas"]["ComposeRequest"] | null;
+                "application/json": components["schemas"]["RenderRequest"] | null;
             };
         };
         responses: {
@@ -1837,6 +2280,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["PostResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_download_posts__post_id__download_get: {
+        parameters: {
+            query?: {
+                format?: ("ig_feed" | "ig_portrait" | "ig_story" | "tiktok" | "fb_post" | "x_post") | null;
+            };
+            header?: never;
+            path: {
+                post_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */
@@ -2446,6 +2922,501 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["TemplateDetail"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    start_meta_oauth_brands__brand_id__connect_meta_get: {
+        parameters: {
+            query: {
+                platform: "instagram" | "facebook";
+            };
+            header?: never;
+            path: {
+                brand_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    meta_oauth_callback_oauth_meta_callback_get: {
+        parameters: {
+            query?: {
+                code?: string | null;
+                state?: string | null;
+                error?: string | null;
+                error_description?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_meta_pages_brands__brand_id__oauth_meta_pages_get: {
+        parameters: {
+            query: {
+                nonce: string;
+            };
+            header?: never;
+            path: {
+                brand_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListMetaPagesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_connections_brands__brand_id__connections_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListConnectionsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_connection_brands__brand_id__connections_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CompleteConnectionBody"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ConnectionOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    disconnect_brands__brand_id__connections__connection_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_scheduled_scheduled_posts_get: {
+        parameters: {
+            query?: {
+                brand_id?: string | null;
+                status?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ListScheduledOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    schedule_post_scheduled_posts_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SchedulePostIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduledPostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_scheduled_scheduled_posts__scheduled_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scheduled_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduledPostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_scheduled_posts__scheduled_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scheduled_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduledPostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reschedule_scheduled_posts__scheduled_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                scheduled_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RescheduleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ScheduledPostOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_posting_schedule_brands__brand_id__connections__connection_id__posting_schedule_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostingScheduleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    put_posting_schedule_brands__brand_id__connections__connection_id__posting_schedule_put: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PostingScheduleIn"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostingScheduleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    reset_posting_schedule_brands__brand_id__connections__connection_id__posting_schedule_reset_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                brand_id: string;
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PostingScheduleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_next_slot_brands__brand_id__connections__connection_id__next_slot_get: {
+        parameters: {
+            query?: {
+                /** @description ISO datetime (UTC preferred); default = now */
+                after?: string | null;
+            };
+            header?: never;
+            path: {
+                brand_id: string;
+                connection_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NextSlotOut"];
                 };
             };
             /** @description Validation Error */

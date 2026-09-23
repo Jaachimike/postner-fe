@@ -398,3 +398,161 @@ export function postHandle(brandName: string | undefined): string {
   if (!brandName) return "@brand";
   return "@" + brandName.toLowerCase().replace(/[^a-z0-9]+/g, "");
 }
+
+/* ---------------------------------------------------------------------------
+   Social connections + scheduling.
+
+   v1 is Meta only. The generator types `platform` and `status` as bare strings
+   on the *Out* models (they are plain `str` on the Pydantic response models
+   even where the request side is an enum) and types `slots` / `slot` as open
+   dicts, so those four fields are narrowed here — same reason the post shapes
+   above are.
+--------------------------------------------------------------------------- */
+
+export type Platform = "instagram" | "facebook";
+export type ConnectionStatus = "active" | "revoked" | "expired";
+export type ScheduledStatus =
+  | "pending"
+  | "processing"
+  | "published"
+  | "failed"
+  | "canceled";
+
+export type Connection = Omit<S["ConnectionOut"], "platform" | "status"> & {
+  platform: Platform;
+  status: ConnectionStatus;
+};
+
+export type MetaPage = S["MetaPageOut"];
+export type CompleteConnectionBody = S["CompleteConnectionBody"];
+
+/** One row of the weekly schedule: a local time, and the days it fires on. */
+export type ScheduleSlot = S["ScheduleSlotIn"];
+export type PostingSchedule = Omit<S["PostingScheduleOut"], "slots"> & {
+  slots: ScheduleSlot[];
+};
+export type PostingScheduleBody = S["PostingScheduleIn"];
+export type NextSlot = Omit<S["NextSlotOut"], "slot"> & { slot: ScheduleSlot };
+
+export type ScheduledPost = Omit<S["ScheduledPostOut"], "platform" | "status"> & {
+  platform: Platform;
+  status: ScheduledStatus;
+};
+export type SchedulePostBody = S["SchedulePostIn"];
+
+export const PLATFORM_META: Record<Platform, { label: string; connectLabel: string }> = {
+  instagram: { label: "Instagram", connectLabel: "Connect Instagram" },
+  facebook: { label: "Facebook", connectLabel: "Connect Facebook" },
+};
+
+export function isPlatform(value: string | null | undefined): value is Platform {
+  return value === "instagram" || value === "facebook";
+}
+
+/**
+ * A platform's name for the UI.
+ *
+ * Falls back to the raw value rather than indexing blind: `platform` is a bare
+ * string on every *Out* model, and v1 narrowing it to the two Meta platforms is
+ * a claim about today's API, not a guarantee. A row for a platform this build
+ * does not know should read oddly, not crash the screen it is on.
+ */
+export function platformLabel(platform: string): string {
+  return PLATFORM_META[platform as Platform]?.label ?? platform;
+}
+
+/**
+ * Day labels for the schedule toggles, in the API's order.
+ *
+ * `0 = Monday … 6 = Sunday` (ISO), which is *not* JavaScript's `getDay()`.
+ * Every conversion between the two lives in `src/lib/utils/date.ts`; nothing
+ * here should index a slot's `days` with a raw `Date` method.
+ */
+export const DAY_LABELS = ["M", "T", "W", "T", "F", "S", "S"] as const;
+export const DAY_NAMES = [
+  "Monday",
+  "Tuesday",
+  "Wednesday",
+  "Thursday",
+  "Friday",
+  "Saturday",
+  "Sunday",
+] as const;
+
+/** `HH:MM`, 24h. Mirrors the API's own slot validation. */
+export const SLOT_TIME_RE = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+export function postsPerWeek(slots: ScheduleSlot[]): number {
+  return slots.reduce((total, slot) => total + (slot.days?.length ?? 0), 0);
+}
+
+export function isActiveConnection(connection: Connection): boolean {
+  return connection.status === "active";
+}
+
+/**
+ * The post has something to publish.
+ *
+ * Mirrors `composed_image_urls` in the API's `app/social/service.py`, which
+ * takes any truthy `pages[].url` / `pages[].image_url` and falls back to
+ * `page_paths`. Deliberately *not* `downloadablePages`, which requires an
+ * `http(s)` URL: under `STORAGE_BACKEND=local` every url is a container path,
+ * and gating on the stricter rule would grey out Schedule on a stock dev setup
+ * for posts the API would happily accept.
+ */
+export function hasPublishableImages(post: Post): boolean {
+  const pages = post.composed?.pages ?? [];
+  if (pages.some((page) => page.url)) return true;
+  return (post.composed?.page_paths ?? []).some(Boolean);
+}
+
+/** Why Schedule is unavailable, or null when it is available. */
+export function schedulingBlockedReason(post: Post): string | null {
+  if (!isApproved(post)) return "Only approved posts can be scheduled.";
+  if (!post.brand_id) return "This post has no brand, so it has no connected accounts.";
+  if (!hasPublishableImages(post)) {
+    return "This post has no rendered images yet. Open it and download once to build them.";
+  }
+  return null;
+}
+
+/** Rows that still mean something for a post. A canceled row is history. */
+export function liveScheduledPosts(rows: ScheduledPost[], postId: string): ScheduledPost[] {
+  return rows.filter((row) => row.post_id === postId && row.status !== "canceled");
+}
+
+const SCHEDULED_RANK: Record<ScheduledStatus, number> = {
+  failed: 0,
+  processing: 1,
+  pending: 2,
+  published: 3,
+  canceled: 4,
+};
+
+/**
+ * The one row a tile shows when a post is scheduled to several accounts.
+ *
+ * Ranked rather than "most recent": a failure is the thing worth surfacing on a
+ * grid, and it would be hidden by a sibling that published fine.
+ */
+export function primaryScheduledPost(
+  rows: ScheduledPost[],
+  postId: string,
+): ScheduledPost | null {
+  const live = liveScheduledPosts(rows, postId);
+  if (live.length === 0) return null;
+  return [...live].sort(
+    (a, b) => SCHEDULED_RANK[a.status] - SCHEDULED_RANK[b.status],
+  )[0];
+}
+
+export const SCHEDULED_STATUS_META: Record<
+  ScheduledStatus,
+  { label: string; tone: string }
+> = {
+  pending: { label: "Scheduled", tone: "bg-accent" },
+  processing: { label: "Publishing", tone: "bg-accent" },
+  published: { label: "Published", tone: "bg-approve" },
+  failed: { label: "Failed", tone: "bg-reject" },
+  canceled: { label: "Canceled", tone: "bg-ink/25" },
+};

@@ -6,6 +6,8 @@ import { ImageIcon } from "lucide-react";
 import { HtmlPreview } from "@/components/ui/html-preview";
 import { Spinner } from "@/components/ui/feedback";
 import { DownloadApprovedButton } from "@/components/review/download-approved-button";
+import { SchedulePostButton } from "@/components/social/schedule-post-button";
+import { ScheduledBadge } from "@/components/social/scheduled-badge";
 import { cn } from "@/lib/utils/cn";
 import { formatDay } from "@/lib/utils/date";
 import { aspectRatio, formatLabel } from "@/lib/formats";
@@ -18,7 +20,9 @@ import {
   composedPages,
   previewPages,
   postCaption,
+  primaryScheduledPost,
   type Post,
+  type ScheduledPost,
 } from "@/lib/api/types";
 
 /**
@@ -29,7 +33,16 @@ import {
  * but a grid is not that moment, and five platform skins side by side is noise
  * standing in for information.
  */
-export function PostTile({ post, brandName }: { post: Post; brandName?: string }) {
+export function PostTile({
+  post,
+  brandName,
+  scheduled,
+}: {
+  post: Post;
+  brandName?: string;
+  /** The publish row worth showing, when this grid knows about scheduling. */
+  scheduled?: ScheduledPost | null;
+}) {
   const caption = postCaption(post) || "Untitled post";
   const pageCount = composedPages(post).length;
 
@@ -47,6 +60,8 @@ export function PostTile({ post, brandName }: { post: Post; brandName?: string }
         <div className="flex flex-col gap-2 p-4">
           <p className="line-clamp-2 text-sm font-medium text-ink">{caption}</p>
 
+          {scheduled ? <ScheduledBadge scheduled={scheduled} className="self-start" /> : null}
+
           <div className="flex items-center gap-2 text-xs text-ink-subtle">
             <StageBadge post={post} />
             <span aria-hidden>·</span>
@@ -59,7 +74,8 @@ export function PostTile({ post, brandName }: { post: Post; brandName?: string }
         </div>
       </Link>
       {isApproved(post) ? (
-        <div className="absolute right-3 top-3 z-10">
+        <div className="absolute right-3 top-3 z-10 flex items-start gap-2">
+          <SchedulePostButton post={post} variant="overlay" />
           <DownloadApprovedButton
             postId={post.id}
             format={post.format}
@@ -235,9 +251,16 @@ function splitAcrossColumns<T>(items: T[], columnCount: number): T[][] {
 export function PostGrid({
   posts,
   brands,
+  scheduled,
 }: {
   posts: Post[];
   brands: { id: string; name: string }[] | undefined;
+  /**
+   * Every scheduled-publish row the page loaded, not one per tile. The grid
+   * picks each post's out of the list so the screen makes one request rather
+   * than one per card.
+   */
+  scheduled?: ScheduledPost[];
 }) {
   const names = new Map((brands ?? []).map((brand) => [brand.id, brand.name]));
   const columnCount = useGridColumnCount();
@@ -252,6 +275,9 @@ export function PostGrid({
               key={post.id}
               post={post}
               brandName={names.get(post.brand_id ?? "")}
+              scheduled={
+                scheduled ? primaryScheduledPost(scheduled, post.id) : null
+              }
             />
           ))}
         </ul>

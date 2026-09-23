@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Generating } from "@/components/post/generating";
+import { SchedulePostButton } from "@/components/social/schedule-post-button";
 import { FitBox } from "@/components/post/media-frame";
 import { ReviewSurface } from "@/components/review/review-surface";
 import { ErrorNote, Skeleton } from "@/components/ui/feedback";
@@ -53,13 +54,18 @@ export default function PostPage() {
 
   return (
     <div className="flex min-h-0 flex-1 flex-col gap-4">
-      <Link
-        href={isApproved(post.data) ? "/approved" : "/drafts"}
-        className="inline-flex w-fit shrink-0 items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
-      >
-        <ArrowLeft className="size-4" aria-hidden />
-        {isApproved(post.data) ? "Back to approved" : "Back to drafts"}
-      </Link>
+      <div className="flex shrink-0 items-center gap-3">
+        <Link
+          href={isApproved(post.data) ? "/approved" : "/drafts"}
+          className="inline-flex w-fit items-center gap-1.5 text-sm text-ink-muted transition-colors hover:text-ink"
+        >
+          <ArrowLeft className="size-4" aria-hidden />
+          {isApproved(post.data) ? "Back to approved" : "Back to drafts"}
+        </Link>
+        {isApproved(post.data) ? (
+          <SchedulePostButton post={post.data} className="ml-auto h-9 px-3.5 text-sm" />
+        ) : null}
+      </div>
 
       <ReviewSurface post={post.data} onAdvance={() => router.push("/approved")} />
     </div>

@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import Link from "next/link";
-import { Pencil, Plus } from "lucide-react";
+import { Pencil, Plug, Plus } from "lucide-react";
 import { PageHeader } from "@/components/layout/page-header";
 import { Button } from "@/components/ui/button";
 import { Sheet } from "@/components/ui/sheet";
@@ -101,12 +101,21 @@ export default function BrandsPage() {
                 ))}
               </div>
 
-              <Link
-                href={`/posts/new?brand=${brand.id}`}
-                className="mt-auto text-sm font-medium text-ink underline-offset-4 hover:underline"
-              >
-                Draft a post →
-              </Link>
+              <div className="mt-auto flex flex-wrap items-center gap-x-4 gap-y-2">
+                <Link
+                  href={`/posts/new?brand=${brand.id}`}
+                  className="text-sm font-medium text-ink underline-offset-4 hover:underline"
+                >
+                  Draft a post →
+                </Link>
+                <Link
+                  href={`/brands/${brand.id}/connections`}
+                  className="inline-flex items-center gap-1.5 text-sm text-ink-muted underline-offset-4 transition-colors hover:text-ink hover:underline"
+                >
+                  <Plug className="size-3.5" aria-hidden />
+                  Connections
+                </Link>
+              </div>
             </li>
           ))}
         </ul>
